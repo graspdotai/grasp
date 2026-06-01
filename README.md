@@ -9,59 +9,39 @@ Voice-first AI learning platform — personalized curriculum, interactive lesson
 | Layer    | Tech                                      |
 | -------- | ----------------------------------------- |
 | Frontend | Next.js 15, TypeScript, Tailwind CSS, Framer Motion |
-| API      | Express (Node.js)                         |
-| Database | Supabase                                  |
-| Voice    | AethexAI (configure when integrating)     |
-| AI       | LLM provider of your choice (e.g. OpenAI) |
+| API      | [grasp-api](https://github.com/graspdotai/grasp-api) (separate repo) |
+| Database | Supabase (configured in API repo)         |
 
 ## Repo structure
 
 ```
 grasp/
-├── apps/
-│   ├── web/          # Next.js frontend (create-next-app)
-│   └── api/          # Express API (express-generator)
-├── supabase/         # Supabase local config & migrations
-├── .env.example      # Environment variable reference
-└── package.json      # npm workspaces
+└── apps/
+    └── web/          # Next.js frontend
 ```
+
+The Express API lives in **[graspdotai/grasp-api](https://github.com/graspdotai/grasp-api)** for independent deployment.
 
 ## Prerequisites
 
 - Node.js 20+
 - npm 10+
-- [Supabase CLI](https://supabase.com/docs/guides/cli) (optional, for local DB)
+- [grasp-api](https://github.com/graspdotai/grasp-api) running locally for full-stack dev (optional)
 
 ## Quick start
 
 ```bash
-# Install all workspace dependencies
 npm install
-
-# Copy env templates
 cp .env.example apps/web/.env.local
-# Add API keys to apps/web/.env.local and configure API env as needed
-
-# Run frontend + API together
 npm run dev
 ```
 
 - **Web:** http://localhost:3000  
-- **API:** http://localhost:4000 — run with `PORT=4000 npm run dev:api` (Express defaults to 3000; use a different port so it does not clash with Next.js)
+- **API:** http://localhost:4000 (clone and run [grasp-api](https://github.com/graspdotai/grasp-api))
 
-## Individual apps
+## Environment
 
-```bash
-npm run dev:web    # Next.js only
-npm run dev:api    # Express only
-```
-
-### Supabase (optional)
-
-```bash
-npx supabase start    # local Postgres + Studio
-npx supabase status   # URLs and keys
-```
+Set `NEXT_PUBLIC_API_URL` in `apps/web/.env.local` to your API URL (e.g. `http://localhost:4000` locally).
 
 ## GitHub
 
@@ -81,4 +61,4 @@ git push -u origin main
 
 ---
 
-Built for [graspdotai/grasp](https://github.com/graspdotai/grasp).
+API: [graspdotai/grasp-api](https://github.com/graspdotai/grasp-api)
