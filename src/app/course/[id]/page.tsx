@@ -524,7 +524,7 @@ export default function CoursePage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
         {/* LEFT COLUMN: Sidebar list of sections - FLAT */}
         <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="bg-neutral-50 rounded-2xl border border-neutral-100 p-4">
+          <div className="bg-neutral-50 rounded-2xl p-4">
             <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-400 px-2 mb-3">
               Course Syllabus
             </h2>
@@ -685,7 +685,7 @@ export default function CoursePage({
                   <button
                     onClick={handlePrevSlide}
                     disabled={activeSlideIdx === 0}
-                    className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    className="p-2 bg-neutral-900 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                     title="Previous Slide"
                   >
                     <CaretLeftIcon size={16} weight="bold" />
@@ -708,7 +708,7 @@ export default function CoursePage({
                     disabled={
                       activeSlideIdx === activeSection.slides.length - 1
                     }
-                    className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    className="p-2 bg-neutral-900 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                     title="Next Slide"
                   >
                     <CaretRightIcon size={16} weight="bold" />
@@ -741,24 +741,19 @@ export default function CoursePage({
           >
             {/* 1. Header Toolbar */}
             <div className="flex items-center justify-between pb-4 border-b border-neutral-900">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary/10 border border-primary/20 p-2 rounded-lg text-primary">
-                  <HeadphonesIcon size={18} weight="fill" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-widest">
-                    AI IMMERSIVE CLASSROOM
-                  </h4>
-                  <p className="text-sm font-bold text-neutral-200">
-                    {activeSection.title}
-                  </p>
-                </div>
+              <div>
+                <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-widest">
+                  AI IMMERSIVE CLASSROOM
+                </h4>
+                <p className="text-sm font-bold text-neutral-200">
+                  {activeSection.title}
+                </p>
               </div>
 
               {/* Exit Classroom button */}
               <button
                 onClick={closeAudioClass}
-                className="inline-flex items-center gap-1.5 py-2 px-4 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-sm font-bold text-neutral-300 hover:text-white rounded-xl transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 py-2 px-4 bg-neutral-900 hover:bg-neutral-800 text-sm font-bold text-neutral-300 hover:text-white rounded-xl transition-all cursor-pointer"
               >
                 <XIcon size={16} weight="bold" />
                 <span>Exit Class</span>
@@ -768,7 +763,7 @@ export default function CoursePage({
             {/* 2. Main split lecture screen */}
             <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8 my-6 overflow-hidden min-h-0">
               {/* SLIDE VISUALIZATION VIEWPORT (lg:col-span-8) */}
-              <div className="lg:col-span-8 bg-neutral-900 border border-neutral-800 rounded-2xl p-8 md:p-12 flex flex-col justify-between h-full overflow-y-auto">
+              <div className="lg:col-span-9 bg-neutral-900 rounded-2xl p-8 md:p-12 flex flex-col h-full overflow-y-auto">
                 {/* Slide page index */}
                 <div className="flex items-center justify-between text-xs text-neutral-500 font-mono tracking-wider font-semibold uppercase">
                   <span>THERMODYNAMICS LECTURE SERIES</span>
@@ -778,7 +773,7 @@ export default function CoursePage({
                 </div>
 
                 {/* Big full resolution slide content */}
-                <div className="my-8 flex flex-col gap-6 max-w-2xl mx-auto w-full">
+                <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full my-auto">
                   <span className="text-xs font-bold text-primary tracking-widest uppercase">
                     Core Physics Formulation
                   </span>
@@ -802,36 +797,12 @@ export default function CoursePage({
                     ))}
                   </div>
                 </div>
-
-                {/* Slide bottom controls */}
-                <div className="flex items-center justify-between border-t border-neutral-800/80 pt-6">
-                  {/* Completion toggler inside lecture */}
-                  <button
-                    onClick={(e) => toggleSectionCompleted(activeSection.id, e)}
-                    className={`inline-flex items-center gap-2 py-2.5 px-5 rounded-xl text-xs font-bold border transition-all ${
-                      activeSection.completed
-                        ? "bg-success-500/10 text-success-400 border-success-500/20"
-                        : "bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border-neutral-700"
-                    }`}
-                  >
-                    <CheckIcon size={14} weight="bold" />
-                    <span>
-                      {activeSection.completed
-                        ? "Section Completed"
-                        : "Mark as Completed"}
-                    </span>
-                  </button>
-
-                  <span className="text-xs text-neutral-600 font-mono">
-                    Grasp AI Platform • Intermediate Engineering
-                  </span>
-                </div>
               </div>
 
               {/* AI TEACHER CONTROLLER PANEL (lg:col-span-4) */}
-              <div className="lg:col-span-4 flex flex-col gap-4 justify-between h-full">
+              <div className="lg:col-span-3 flex flex-col gap-4 justify-between h-full">
                 {/* Top section: The Teacher representation */}
-                <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center flex-grow">
+                <div className="bg-neutral-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center flex-grow">
                   {/* Glowing pulsing Orb representing AI Teacher */}
                   <div className="relative w-28 h-28 flex items-center justify-center mb-6">
                     <motion.div
@@ -880,7 +851,7 @@ export default function CoursePage({
                     AI Thermodynamics Instructor
                   </p>
 
-                  <div className="mt-4 px-3 py-1 bg-neutral-950 border border-neutral-800 rounded-full text-[10px] font-semibold tracking-wider text-primary uppercase">
+                  <div className="mt-4 px-3 py-1 bg-neutral-950 rounded-full text-[10px] font-semibold tracking-wider text-primary uppercase">
                     {isTTSLoading
                       ? "Synthesizing voice..."
                       : audioRef.current && !audioRef.current.paused
@@ -914,7 +885,7 @@ export default function CoursePage({
                 </div>
 
                 {/* Center section: Subtitles/Script Transcript */}
-                <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col gap-2 min-h-[140px] max-h-[180px] overflow-y-auto">
+                <div className="bg-neutral-900 rounded-2xl p-5 flex flex-col gap-2 min-h-[140px] max-h-[180px] overflow-y-auto">
                   <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">
                     Teacher Transcript
                   </span>
@@ -930,14 +901,14 @@ export default function CoursePage({
                 </div>
 
                 {/* Bottom section: Full classroom player controller controls - FLAT */}
-                <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col gap-4">
+                <div className="bg-neutral-900 rounded-2xl p-5 flex flex-col gap-4">
                   {/* Playback progress & main actions */}
                   <div className="flex items-center justify-between">
                     {/* Back / Next slide buttons */}
                     <button
                       onClick={handlePrevSlide}
                       disabled={activeSlideIdx === 0}
-                      className="p-2.5 bg-neutral-950 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      className="p-2.5 bg-neutral-950 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                       title="Previous Slide"
                     >
                       <CaretLeftIcon size={18} weight="bold" />
@@ -986,7 +957,7 @@ export default function CoursePage({
                       disabled={
                         activeSlideIdx === activeSection.slides.length - 1
                       }
-                      className="p-2.5 bg-neutral-950 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      className="p-2.5 bg-neutral-950 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
                       title="Next Slide"
                     >
                       <CaretRightIcon size={18} weight="bold" />
@@ -1003,7 +974,7 @@ export default function CoursePage({
                       <select
                         value={language}
                         onChange={(e) => handleLanguageChange(e.target.value)}
-                        className="bg-neutral-950 border border-neutral-800 rounded-lg py-1 px-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                        className="bg-neutral-950 rounded-lg py-1 px-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                       >
                         <option value="english">English (US)</option>
                         <option value="french">French (FR)</option>
