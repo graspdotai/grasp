@@ -297,7 +297,7 @@ export default function CourseThumbnail({
       </div>
 
       {/* Course title */}
-      <p className="absolute bottom-4 left-4 z-20 font-serif text-white text-xl leading-tight m-0 drop-shadow-md max-w-[75%]">
+      <p className="absolute bottom-4 left-4 z-20 font-serif text-white/80 backdrop-blur-xl text-2xl leading-tight m-0 drop-shadow-md max-w-[75%]">
         {title}
       </p>
 

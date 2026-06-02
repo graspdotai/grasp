@@ -95,12 +95,12 @@ export default function Home() {
           href="/course/thermodynamics-101"
           className="group block cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
         >
-          <CourseThumbnail title="JavaScript 101" progress={progress} />
+          <CourseThumbnail title="JavaScript basics" progress={progress} />
 
           <div className="flex items-center w-full justify-between mt-5">
             <div>
               <p className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
-                Thermodynamics 101
+                JavaScript basics
               </p>
               <p className="font-medium text-neutral-500 leading-tight text-sm">
                 20 Sections • 2 Notes
