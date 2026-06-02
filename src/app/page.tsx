@@ -3,6 +3,7 @@
 import Navbar from "@/components/Navbar";
 import { ArrowRightIcon, PlusIcon } from "@phosphor-icons/react";
 import Link from "next/link";
+import CourseThumbnail from "@/components/CourseThumbnail";
 
 export default function Home() {
   async function createAgent() {
@@ -54,7 +55,6 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Bottom row */}
           <div className="relative z-10 flex items-end justify-between">
             <div>
               <p className="font-serif text-[28px] text-white leading-tight">
@@ -64,31 +64,12 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
-        <Link href="/course/thermodynamics-101" className="group block cursor-pointer transition-transform duration-200 hover:-translate-y-0.5">
-          {/* Thumbnail with badge + progress bar */}
-          <div className="relative bg-neutral-50 rounded-2xl w-full aspect-video overflow-hidden border border-neutral-100 group-hover:border-neutral-200 transition-all duration-200">
-            {/* Top-left badge */}
-            {progress === 0 ? (
-              <span className="absolute top-3 left-3 text-xs font-semibold text-neutral-500 bg-white/80 backdrop-blur-sm rounded-full px-2.5 py-1">
-                Not started
-              </span>
-            ) : (
-              <span className="absolute top-3 left-3 text-xs font-semibold text-primary bg-primary-200/20 backdrop-blur-sm rounded-full px-2.5 py-1">
-                {progress}% complete
-              </span>
-            )}
 
-            {/* Bottom progress bar */}
-            {progress > 0 && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-neutral-200">
-                <div
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            )}
-          </div>
+        <Link
+          href="/course/thermodynamics-101"
+          className="group block cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+        >
+          <CourseThumbnail title="Thermodynamics 101" progress={progress} />
 
           <div className="flex items-center w-full justify-between mt-5">
             <div>
