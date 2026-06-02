@@ -90,6 +90,32 @@ export default function Home() {
             Created on Jan 1, 2024
           </p>
         </Link>
+
+        <Link
+          href="/course/thermodynamics-101"
+          className="group block cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+        >
+          <CourseThumbnail title="JavaScript 101" progress={progress} />
+
+          <div className="flex items-center w-full justify-between mt-5">
+            <div>
+              <p className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
+                Thermodynamics 101
+              </p>
+              <p className="font-medium text-neutral-500 leading-tight text-sm">
+                20 Sections • 2 Notes
+              </p>
+            </div>
+
+            <div className="bg-neutral-100 rounded-full h-10 w-10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-200 group-hover:scale-105">
+              <ArrowRightIcon size={18} />
+            </div>
+          </div>
+
+          <p className="text-xs font-medium text-neutral-400 mt-2">
+            Created on Jan 1, 2024
+          </p>
+        </Link>
       </div>
     </main>
   );
