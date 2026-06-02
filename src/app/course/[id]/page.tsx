@@ -482,7 +482,7 @@ export default function CoursePage({
       {/* Course Title and Progress Header - FLAT aesthetic (No shadows) */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-neutral-100">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+          <div className="flex items-center gap-2 text-xs font-semibold text-primary mb-1">
             <span>Engineering Core</span>
             <span>•</span>
             <span>Intermediate</span>
@@ -525,7 +525,7 @@ export default function CoursePage({
         {/* LEFT COLUMN: Sidebar list of sections - FLAT */}
         <div className="lg:col-span-4 flex flex-col gap-4">
           <div className="bg-neutral-50 rounded-2xl p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-400 px-2 mb-3">
+            <h2 className="text-sm font-semibold text-neutral-500 px-2 mb-3">
               Course Syllabus
             </h2>
 
@@ -559,12 +559,12 @@ export default function CoursePage({
                     </button>
 
                     {/* Text Details */}
-                    <div className="flex-grow">
+                    <div className="grow">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-semibold text-neutral-400">
+                        <span className="text-[11px] font-semibold text-neutral-500">
                           MODULE {index + 1}
                         </span>
-                        <span className="text-[11px] font-medium text-neutral-400">
+                        <span className="text-[11px] font-medium text-neutral-500">
                           {section.duration}
                         </span>
                       </div>
@@ -582,19 +582,6 @@ export default function CoursePage({
                 );
               })}
             </div>
-          </div>
-
-          {/* Quick Stats card - FLAT */}
-          <div className="bg-primary-50 rounded-2xl border border-primary-100/50 p-5 flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-primary">
-              <SparkleIcon size={18} weight="fill" />
-              <span className="font-bold text-sm">AI Teacher Ready</span>
-            </div>
-            <p className="text-xs text-primary-900 leading-relaxed">
-              Every section includes an AI-synthesized slide deck. Click{" "}
-              <strong>"Start Class"</strong> to launch the fullscreen classroom
-              with your AI teacher instantly.
-            </p>
           </div>
         </div>
 
@@ -625,7 +612,7 @@ export default function CoursePage({
 
               {/* Bullet points checklist */}
               <div className="mt-2 pt-4 border-t border-neutral-100">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">
+                <h4 className="text-xs font-semibold text-neutral-500 mb-3">
                   What you will learn in this section:
                 </h4>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -740,7 +727,14 @@ export default function CoursePage({
             className="fixed inset-0 z-50 bg-neutral-950 text-white flex flex-col p-6 md:p-8 select-none"
           >
             {/* 1. Header Toolbar */}
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-900">
+            <div className="flex items-center gap-4 pb-4 border-b border-neutral-900">
+              {/* Exit Classroom button */}
+              <button
+                onClick={closeAudioClass}
+                className="inline-flex items-center py-4 px-4 bg-neutral-900 hover:bg-neutral-800 text-sm font-bold text-neutral-300 hover:text-white rounded-xl transition-all cursor-pointer"
+              >
+                <XIcon size={16} weight="bold" />
+              </button>
               <div>
                 <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-widest">
                   AI IMMERSIVE CLASSROOM
@@ -749,19 +743,10 @@ export default function CoursePage({
                   {activeSection.title}
                 </p>
               </div>
-
-              {/* Exit Classroom button */}
-              <button
-                onClick={closeAudioClass}
-                className="inline-flex items-center gap-1.5 py-2 px-4 bg-neutral-900 hover:bg-neutral-800 text-sm font-bold text-neutral-300 hover:text-white rounded-xl transition-all cursor-pointer"
-              >
-                <XIcon size={16} weight="bold" />
-                <span>Exit Class</span>
-              </button>
             </div>
 
             {/* 2. Main split lecture screen */}
-            <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8 my-6 overflow-hidden min-h-0">
+            <div className="grow grid grid-cols-1 lg:grid-cols-12 gap-8 my-6 overflow-hidden min-h-0">
               {/* SLIDE VISUALIZATION VIEWPORT (lg:col-span-8) */}
               <div className="lg:col-span-9 bg-neutral-900 rounded-2xl p-8 md:p-12 flex flex-col h-full overflow-y-auto">
                 {/* Slide page index */}
@@ -802,7 +787,7 @@ export default function CoursePage({
               {/* AI TEACHER CONTROLLER PANEL (lg:col-span-4) */}
               <div className="lg:col-span-3 flex flex-col gap-4 justify-between h-full">
                 {/* Top section: The Teacher representation */}
-                <div className="bg-neutral-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center flex-grow">
+                <div className="bg-neutral-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center grow">
                   {/* Glowing pulsing Orb representing AI Teacher */}
                   <div className="relative w-28 h-28 flex items-center justify-center mb-6">
                     <motion.div
