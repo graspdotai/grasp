@@ -1,4 +1,4 @@
-import BrandPanel from "./components/BrandPanel";
+import BrandPanel from "@/components/auth/BrandPanel";
 
 export default function AuthLayout({
   children,
