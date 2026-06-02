@@ -26,14 +26,10 @@ export default function Home() {
   return (
     <main className="p-6">
       <Navbar />
-      <p>Welcome to Grasp!</p>
 
-      <button
-        onClick={createAgent}
-        className="mt-4 rounded bg-black px-4 py-2 text-white"
-      >
-        Create Agent
-      </button>
+      <div className="mt-4">
+        <div className="bg-neutral-50 rounded-xl w-full aspect-video"></div>
+      </div>
     </main>
   );
 }

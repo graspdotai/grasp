@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${manrope.className} antialiased max-w-4xl mx-auto`}>
+      <body className={`${manrope.className} antialiased max-w-7xl mx-auto`}>
         {children}
       </body>
     </html>
