@@ -2,6 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import { ArrowRightIcon, PlusIcon } from "@phosphor-icons/react";
+import Link from "next/link";
 
 export default function Home() {
   async function createAgent() {
@@ -63,9 +64,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div>
+        
+        <Link href="/course/thermodynamics-101" className="group block cursor-pointer transition-transform duration-200 hover:-translate-y-0.5">
           {/* Thumbnail with badge + progress bar */}
-          <div className="relative bg-neutral-50 rounded-2xl w-full aspect-video overflow-hidden">
+          <div className="relative bg-neutral-50 rounded-2xl w-full aspect-video overflow-hidden border border-neutral-100 group-hover:border-neutral-200 transition-all duration-200">
             {/* Top-left badge */}
             {progress === 0 ? (
               <span className="absolute top-3 left-3 text-xs font-semibold text-neutral-500 bg-white/80 backdrop-blur-sm rounded-full px-2.5 py-1">
@@ -90,7 +92,7 @@ export default function Home() {
 
           <div className="flex items-center w-full justify-between mt-5">
             <div>
-              <p className="text-lg font-bold tracking-tight">
+              <p className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
                 Thermodynamics 101
               </p>
               <p className="font-medium text-neutral-500 leading-tight text-sm">
@@ -98,15 +100,15 @@ export default function Home() {
               </p>
             </div>
 
-            <button className="bg-neutral-100 rounded-full h-10 w-10 flex items-center justify-center">
+            <div className="bg-neutral-100 rounded-full h-10 w-10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-200 group-hover:scale-105">
               <ArrowRightIcon size={18} />
-            </button>
+            </div>
           </div>
 
           <p className="text-xs font-medium text-neutral-400 mt-2">
             Created on Jan 1, 2024
           </p>
-        </div>
+        </Link>
       </div>
     </main>
   );
