@@ -62,6 +62,7 @@
   --color-danger-800: #991b1b;
   --color-danger-900: #7f1d1d;
   --color-danger-950: #450a0a;
+  --font-serif: "DM Serif Display", serif;
 }
 
 body {

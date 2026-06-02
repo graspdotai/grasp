@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
-import { Google_Sans } from "next/font/google";
+import { Google_Sans, DM_Serif_Display } from "next/font/google";
 import "./globals.css";
 
-const manrope = Google_Sans({
+const googleSans = Google_Sans({
   subsets: ["latin"],
+});
+
+const dmSerif = DM_Serif_Display({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-serif",
 });
 
 export const metadata: Metadata = {
@@ -18,7 +24,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${manrope.className} antialiased max-w-7xl mx-auto`}>
+      <body
+        className={`${googleSans.className} ${dmSerif.variable} antialiased max-w-7xl mx-auto`}
+      >
         {children}
       </body>
     </html>
