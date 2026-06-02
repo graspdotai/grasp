@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
+import { Google_Sans } from "next/font/google";
 import "./globals.css";
 
-const manrope = DM_Sans({
+const manrope = Google_Sans({
   subsets: ["latin"],
 });
 
