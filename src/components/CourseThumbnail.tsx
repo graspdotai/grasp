@@ -277,22 +277,18 @@ export default function CourseThumbnail({
     >
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-transparent to-black/30 z-10" />
-
       {/* Progress pill */}
       <div className="absolute top-3 left-3 z-20">
         {progress === 0 ? (
-          <span className="text-[10px] font-semibold tracking-wide text-white/50 bg-white/10 border border-white/15 rounded-full px-2.5 py-1">
+          <span className="text-[10px] font-semibold tracking-wide text-white/50 bg-white/10 rounded-full px-2.5 py-1">
             Not started
           </span>
         ) : (
           <span
-            className="text-[10px] font-semibold tracking-wide rounded-full px-2.5 py-1 border"
+            className="text-[10px] rounded-full px-2.5 py-1"
             style={{
               color: palette[3],
               background: palette[1] + "44",
-              borderColor: palette[2] + "66",
             }}
           >
             {progress}% complete
@@ -307,7 +303,7 @@ export default function CourseThumbnail({
 
       {/* Progress bar */}
       {progress > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/10 z-20">
+        <div className="absolute bottom-0 left-0 right-0 h-0.75 bg-white/10 z-20">
           <div
             className="h-full transition-all duration-500"
             style={{ width: `${progress}%`, background: palette[2] }}
