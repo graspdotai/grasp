@@ -830,21 +830,11 @@ export default function CoursePage({
                 onDraftChange={setQuestionDraft}
               />
 
-              {/* SLIDE VISUALIZATION VIEWPORT */}
               <div
                 className={`bg-neutral-900 rounded-2xl p-8 md:p-12 flex flex-col h-full overflow-y-auto transition-[grid-column] duration-200 ${
                   isQuestionPanelOpen ? "lg:col-span-9" : "lg:col-span-11"
                 }`}
               >
-                {/* Slide page index */}
-                <div className="flex items-center justify-between text-xs text-neutral-500 font-mono tracking-wider font-semibold uppercase">
-                  <span>THERMODYNAMICS LECTURE SERIES</span>
-                  <span>
-                    SLIDE {activeSlideIdx + 1} OF {activeSection.slides.length}
-                  </span>
-                </div>
-
-                {/* Big full resolution slide content */}
                 <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full my-auto">
                   <span className="text-xs font-bold text-primary tracking-widest uppercase">
                     Core Physics Formulation
@@ -868,6 +858,23 @@ export default function CoursePage({
                       </div>
                     ))}
                   </div>
+                </div>
+                <div className="flex items-center mx-auto gap-2 text-sm text-neutral-500 font-mono font-semibold">
+                  <button
+                    className="p-2 rounded-full bg-neutral-800 text-white hover:bg-neutral-800/90 transition-colors"
+                    onClick={handlePrevSlide}
+                  >
+                    <CaretLeftIcon size={14} weight="bold" />
+                  </button>
+                  <span>
+                    {activeSlideIdx + 1} / {activeSection.slides.length}
+                  </span>
+                  <button
+                    className="p-2 rounded-full bg-neutral-800 text-white hover:bg-neutral-800/90 transition-colors"
+                    onClick={handleNextSlide}
+                  >
+                    <CaretRightIcon size={14} weight="bold" />
+                  </button>
                 </div>
               </div>
             </div>
