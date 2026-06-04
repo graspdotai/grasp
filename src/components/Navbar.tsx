@@ -103,13 +103,13 @@ export default function Navbar() {
               aria-haspopup="true"
               aria-expanded={isOpen}
             >
-              <UserAvatar profile={profile} size={36} />
-              <CaretDownIcon
+              <UserAvatar profile={profile} size={42} />
+              {/* <CaretDownIcon
                 size={14}
                 className={`text-neutral-500 transition-transform duration-200 ${
                   isOpen ? "rotate-180" : ""
                 }`}
-              />
+              /> */}
             </button>
 
             <AnimatePresence>
@@ -127,7 +127,10 @@ export default function Navbar() {
                       {displayName}
                     </p>
                     {profile.email && profile.email !== displayName && (
-                      <p className="text-xs text-neutral-400 truncate mt-0.5" title={profile.email}>
+                      <p
+                        className="text-xs text-neutral-400 truncate mt-0.5"
+                        title={profile.email}
+                      >
                         {profile.email}
                       </p>
                     )}

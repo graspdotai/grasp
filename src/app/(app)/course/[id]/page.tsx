@@ -389,6 +389,12 @@ export default function CoursePage({
     sections.length > 0
       ? Math.round((completedCount / sections.length) * 100)
       : 0;
+  const activeSectionIdx = sections.findIndex((s) => s.id === activeSectionId);
+  const prevSection = activeSectionIdx > 0 ? sections[activeSectionIdx - 1] : null;
+  const nextSection =
+    activeSectionIdx >= 0 && activeSectionIdx < sections.length - 1
+      ? sections[activeSectionIdx + 1]
+      : null;
   const defaultQuestionThread: TutorMessage[] = activeSection
     ? [
         {
@@ -893,8 +899,6 @@ export default function CoursePage({
                   ))}
                 </ul>
               </div>
-
-              <SectionReferenceLinks sources={sectionSources} />
             </div>
 
             <div className="z-10 pr-3 pl-6 flex items-center justify-between flex-wrap gap-4 bg-neutral-50 rounded-t-3xl mt-12 py-3">
@@ -931,6 +935,70 @@ export default function CoursePage({
                   ))}
                 </div>
               </div>
+            </div>
+
+            <SectionReferenceLinks sources={sectionSources} />
+
+            {/* Bottom Navigation */}
+            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-neutral-100 pt-8">
+              {/* Previous Button */}
+              {prevSection ? (
+                <button
+                  onClick={() => selectSection(prevSection.id)}
+                  className="flex items-center gap-4 p-5 border border-neutral-200 hover:border-primary/30 hover:bg-neutral-50/50 rounded-2xl text-left group transition-all duration-200 cursor-pointer"
+                >
+                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all flex-shrink-0">
+                    <CaretLeftIcon size={18} weight="bold" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                      Previous Section
+                    </p>
+                    <p className="text-sm font-bold text-neutral-800 group-hover:text-primary transition-colors truncate mt-0.5">
+                      {prevSection.title}
+                    </p>
+                  </div>
+                </button>
+              ) : (
+                <div />
+              )}
+
+              {/* Next Button / Next Course */}
+              {nextSection ? (
+                <button
+                  onClick={() => selectSection(nextSection.id)}
+                  className="flex items-center justify-between p-5 border border-neutral-200 hover:border-primary/30 hover:bg-neutral-50/50 rounded-2xl text-right group transition-all duration-200 cursor-pointer"
+                >
+                  <div className="min-w-0 pr-4 grow">
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                      Next Section
+                    </p>
+                    <p className="text-sm font-bold text-neutral-800 group-hover:text-primary transition-colors truncate mt-0.5">
+                      {nextSection.title}
+                    </p>
+                  </div>
+                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all flex-shrink-0">
+                    <CaretRightIcon size={18} weight="bold" />
+                  </div>
+                </button>
+              ) : (
+                <Link
+                  href={isLiveCourse ? "/" : "/course/javascript-basics"}
+                  className="flex items-center justify-between p-5 border border-neutral-200 hover:border-primary/30 hover:bg-neutral-50/50 rounded-2xl text-right group transition-all duration-200"
+                >
+                  <div className="min-w-0 pr-4 grow">
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                      {isLiveCourse ? "Finish Course" : "Next Course"}
+                    </p>
+                    <p className="text-sm font-bold text-neutral-800 group-hover:text-primary transition-colors truncate mt-0.5">
+                      {isLiveCourse ? "Back to Dashboard" : "JavaScript basics"}
+                    </p>
+                  </div>
+                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all flex-shrink-0">
+                    <CaretRightIcon size={18} weight="bold" />
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
         </div>
