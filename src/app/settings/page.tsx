@@ -12,7 +12,7 @@ import {
   parseAvatarVariant,
   type AvatarVariant,
 } from "@/lib/avatar";
-import { signOut } from "@/lib/auth";
+import { deleteAccount, signOut } from "@/lib/auth";
 import { resolveDisplayName } from "@/lib/profileDisplay";
 import { getLocalUserEmail, getLocalUserId } from "@/lib/userSession";
 import type { ProfileRow } from "@/types/database";
@@ -28,6 +28,9 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -75,6 +78,32 @@ export default function SettingsPage() {
       setSaveMessage(err instanceof Error ? err.message : "Could not save");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirm !== "DELETE") {
+      setDeleteError('Type DELETE to confirm.');
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Permanently delete your account and all courses? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    setDeleteError(null);
+
+    try {
+      await deleteAccount();
+      router.push("/signin");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Could not delete account");
+      setIsDeletingAccount(false);
     }
   }
 
@@ -240,6 +269,37 @@ export default function SettingsPage() {
               {isSigningOut ? "Signing out…" : "Sign out"}
             </button>
           </section>
+
+          {userId && (
+            <section className="bg-white rounded-3xl border border-red-100 p-6">
+              <h2 className="text-sm font-semibold text-red-700 mb-2">Delete account</h2>
+              <p className="text-sm text-neutral-600 mb-4">
+                Removes your profile, all courses, and your sign-in. This cannot be undone.
+              </p>
+              <label htmlFor="deleteConfirm" className="text-xs font-medium text-neutral-600">
+                Type <span className="font-mono font-semibold">DELETE</span> to confirm
+              </label>
+              <input
+                id="deleteConfirm"
+                type="text"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                className="mt-1.5 h-10 w-full max-w-xs rounded-xl border border-neutral-200 px-3 text-sm font-mono"
+                autoComplete="off"
+              />
+              {deleteError && (
+                <p className="text-sm text-red-600 mt-2">{deleteError}</p>
+              )}
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={isDeletingAccount || deleteConfirm !== "DELETE"}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeletingAccount ? "Deleting account…" : "Delete my account"}
+              </button>
+            </section>
+          )}
         </div>
       </div>
     </main>

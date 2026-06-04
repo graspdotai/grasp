@@ -100,3 +100,28 @@ export async function getProfileByUserId(userId: string) {
 
   return data;
 }
+
+export async function deleteUserAccount(userId: string): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+
+  const { error: sessionsError } = await supabase
+    .from("learning_sessions")
+    .delete()
+    .eq("user_id", userId);
+
+  if (sessionsError) {
+    throw new HttpError(500, "SESSIONS_DELETE_FAILED", sessionsError.message);
+  }
+
+  const { error: profileError } = await supabase.from("profiles").delete().eq("id", userId);
+
+  if (profileError) {
+    throw new HttpError(500, "PROFILE_DELETE_FAILED", profileError.message);
+  }
+
+  const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+  if (authError) {
+    throw new HttpError(500, "AUTH_DELETE_FAILED", authError.message);
+  }
+}

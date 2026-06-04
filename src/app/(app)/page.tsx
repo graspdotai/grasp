@@ -2,23 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
-import { ArrowRightIcon, PlusIcon } from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react";
 import Link from "next/link";
-import CourseThumbnail from "@/components/CourseThumbnail";
+import CourseCard from "@/components/CourseCard";
 import { fetchUserCourses, type UserCourseSummary } from "@/lib/courseApi";
 import { getLocalUserId } from "@/lib/userSession";
-
-function formatCreatedAt(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return "";
-  }
-}
 
 export default function Home() {
   const [courses, setCourses] = useState<UserCourseSummary[]>([]);
@@ -91,32 +79,11 @@ export default function Home() {
         )}
 
         {courses.map((course) => (
-          <Link
+          <CourseCard
             key={course.id}
-            href={`/course/${course.id}`}
-            className="group block cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
-          >
-            <CourseThumbnail title={course.title} progress={course.progressPercent} />
-
-            <div className="flex items-center w-full justify-between mt-5">
-              <div>
-                <p className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
-                  {course.title}
-                </p>
-                <p className="font-medium text-neutral-500 leading-tight text-sm">
-                  {course.moduleCount} sections
-                </p>
-              </div>
-
-              <div className="bg-neutral-100 rounded-full h-10 w-10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-200 group-hover:scale-105">
-                <ArrowRightIcon size={18} />
-              </div>
-            </div>
-
-            <p className="text-xs font-medium text-neutral-400 mt-2">
-              Created {formatCreatedAt(course.createdAt)}
-            </p>
-          </Link>
+            course={course}
+            onDeleted={(id) => setCourses((prev) => prev.filter((c) => c.id !== id))}
+          />
         ))}
       </div>
     </main>

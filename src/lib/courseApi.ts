@@ -102,6 +102,22 @@ export interface UserCourseSummary {
   createdAt: string;
 }
 
+export async function deleteCourse(
+  sessionId: string,
+  userId?: string,
+): Promise<void> {
+  const res = await fetch(`/api/sessions/${sessionId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(userId ? { userId } : {}),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? "Failed to delete course");
+  }
+}
+
 export async function fetchUserCourses(userId: string): Promise<UserCourseSummary[]> {
   const res = await fetch(`/api/courses?userId=${userId}`, { cache: "no-store" });
   if (!res.ok) return [];

@@ -52,6 +52,27 @@ export async function getClientSession() {
 }
 
 /** Call on app load so localStorage user id matches an existing Supabase session. */
+export async function deleteAccount(): Promise<void> {
+  const res = await fetch("/api/account", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirm: "DELETE" }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      typeof body.error === "string" ? body.error : "Failed to delete account",
+    );
+  }
+
+  clearLocalUserId();
+  clearLocalUserEmail();
+
+  const supabase = createClient();
+  await supabase.auth.signOut();
+}
+
 export async function syncLocalUserFromSession(): Promise<void> {
   const session = await getClientSession();
   if (session?.user?.id) {

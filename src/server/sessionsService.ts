@@ -480,3 +480,38 @@ export async function listCoursesForUser(userIdValue: string) {
 
   return { courses };
 }
+
+export async function deleteLearningSession(sessionIdValue: string, userIdValue: string) {
+  const sessionId = sessionIdSchema.parse(sessionIdValue);
+  const userId = z.string().uuid().parse(userIdValue);
+  const supabase = getSupabaseAdminClient();
+
+  const { data: session, error: fetchError } = await supabase
+    .from("learning_sessions")
+    .select("id, user_id")
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new HttpError(500, "SESSION_READ_FAILED", fetchError.message);
+  }
+
+  if (!session) {
+    throw new HttpError(404, "SESSION_NOT_FOUND", "Course not found.");
+  }
+
+  if (session.user_id !== userId) {
+    throw new HttpError(403, "FORBIDDEN", "You can only delete your own courses.");
+  }
+
+  const { error: deleteError } = await supabase
+    .from("learning_sessions")
+    .delete()
+    .eq("id", sessionId);
+
+  if (deleteError) {
+    throw new HttpError(500, "SESSION_DELETE_FAILED", deleteError.message);
+  }
+
+  return { deleted: true, sessionId };
+}
