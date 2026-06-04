@@ -1,5 +1,5 @@
 const OPENAI_API_KEY =
-  "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";
+  "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";
 
 async function testOpenAIKey() {
   try {

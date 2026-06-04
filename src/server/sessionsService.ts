@@ -6,8 +6,7 @@ import {
 } from "@/lib/clampText";
 import { onboardingProfileSchema } from "@/lib/onboarding";
 import { HttpError } from "@/server/errors";
-import { generateLessonPack } from "@/server/exaService";
-import { generateModuleContent, type ModuleContent } from "@/server/openaiService";
+import { generateModuleContent, generateLessonPack, type ModuleContent } from "@/server/openaiService";
 import { upsertProfileFromOnboarding } from "@/server/profilesService";
 import { getSupabaseAdminClient } from "@/server/supabase";
 

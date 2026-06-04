@@ -147,3 +147,140 @@ Content rules:
     duration,
   };
 }
+
+const lessonPackSchema = z.object({
+  summary: z.string(),
+  learningObjectives: z.array(z.string()).min(3).max(8),
+  lessonOutline: z
+    .array(
+      z.object({
+        title: z.string().min(3),
+        description: z.string().min(10),
+      })
+    )
+    .min(3)
+    .max(8),
+  quizQuestions: z.array(z.string()).min(3).max(6),
+  sources: z
+    .array(
+      z.object({
+        title: z.string().min(3),
+        url: z.string(),
+        highlights: z.array(z.string().min(10)).min(2).max(4),
+      })
+    )
+    .min(2)
+    .max(5),
+});
+
+export async function generateLessonPack(input: {
+  topic: string;
+  goal: string;
+  learnerLevel: string;
+  onboarding?: OnboardingProfile;
+  type?: string;
+  includeDomains?: string[];
+  excludeDomains?: string[];
+  maxAgeHours?: number;
+}) {
+  const apiKey = getOpenAiApiKey();
+  if (!apiKey) {
+    throw new HttpError(500, "OPENAI_NOT_CONFIGURED", "OpenAI is not configured. Set OPENAI_API_KEY.");
+  }
+
+  const onboardingBlock = input.onboarding
+    ? `\nLearner profile:\n${formatOnboardingForPrompt(input.onboarding)}\n`
+    : "";
+
+  const systemPrompt = `You are a curriculum designer and researcher for Grasp.
+Your job is to design a high-quality lesson pack for a user's target topic and goals.
+Additionally, act as a web search research engine and provide 2-5 high-quality, real-world educational resources (from trusted domains like wikipedia.org, khanacademy.org, nasa.gov, britannica.com, or university sites) relevant to the topic.
+For each source, provide a real or highly accurate URL, a descriptive title, and 2-4 actual content highlights/snippets discussing the topic.
+
+Return JSON in this exact structure:
+{
+  "summary": "Max 2 short sentences (~200 chars). Why this topic matters.",
+  "learningObjectives": ["objective 1", "objective 2"],
+  "lessonOutline": [
+    {
+      "title": "Module Title",
+      "description": "Max 2 short sentences (~150 chars)."
+    }
+  ],
+  "quizQuestions": ["question 1", "question 2"],
+  "sources": [
+    {
+      "title": "Title of the web resource",
+      "url": "https://example.com/topic-url",
+      "highlights": ["Snippet 1 from the resource", "Snippet 2 from the resource"]
+    }
+  ]
+}`;
+
+  const userPrompt = `Topic: ${input.topic}
+Goal: ${input.goal}
+Learner level: ${input.learnerLevel}
+${onboardingBlock}
+Please design a tailored lesson pack and research sources matching this profile.`;
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 4096,
+      temperature: 0.4,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new HttpError(502, "OPENAI_REQUEST_FAILED", `OpenAI request failed: ${errorText}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+
+  const rawContent = data.choices?.[0]?.message?.content;
+  if (!rawContent) {
+    throw new HttpError(502, "OPENAI_EMPTY_RESPONSE", "OpenAI returned an empty response.");
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawContent);
+  } catch {
+    throw new HttpError(502, "OPENAI_INVALID_JSON", "OpenAI returned invalid JSON.");
+  }
+
+  const validated = lessonPackSchema.safeParse(parsed);
+  if (!validated.success) {
+    throw new HttpError(
+      502,
+      "OPENAI_SCHEMA_MISMATCH",
+      "OpenAI response did not match the expected lesson pack schema."
+    );
+  }
+
+  return {
+    query: `openai-search: ${input.topic}`,
+    type: input.type ?? "openai",
+    sourceResults: validated.data.sources,
+    content: {
+      summary: validated.data.summary,
+      learningObjectives: validated.data.learningObjectives,
+      lessonOutline: validated.data.lessonOutline,
+      quizQuestions: validated.data.quizQuestions,
+    },
+    grounding: [],
+  };
+}

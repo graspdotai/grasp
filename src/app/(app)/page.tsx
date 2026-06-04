@@ -51,7 +51,31 @@ export default function Home() {
         </Link>
 
         {isLoading && (
-          <p className="col-span-full text-sm text-neutral-500 py-8">Loading your courses…</p>
+          <>
+            <div className="relative group animate-pulse">
+              <div className="w-full aspect-video bg-neutral-200 rounded-2xl" />
+              <div className="flex items-center w-full justify-between mt-5">
+                <div className="grow pr-10">
+                  <div className="h-5 bg-neutral-200 rounded-md w-3/4 mb-2" />
+                  <div className="h-4 bg-neutral-200 rounded-md w-1/3" />
+                </div>
+                <div className="bg-neutral-100 rounded-full h-10 w-10 shrink-0" />
+              </div>
+              <div className="h-3 bg-neutral-200 rounded-md w-1/4 mt-4" />
+            </div>
+
+            <div className="relative group animate-pulse">
+              <div className="w-full aspect-video bg-neutral-200 rounded-2xl" />
+              <div className="flex items-center w-full justify-between mt-5">
+                <div className="grow pr-10">
+                  <div className="h-5 bg-neutral-200 rounded-md w-2/3 mb-2" />
+                  <div className="h-4 bg-neutral-200 rounded-md w-1/4" />
+                </div>
+                <div className="bg-neutral-100 rounded-full h-10 w-10 shrink-0" />
+              </div>
+              <div className="h-3 bg-neutral-200 rounded-md w-1/5 mt-4" />
+            </div>
+          </>
         )}
 
         {isFetched && !userId && (
