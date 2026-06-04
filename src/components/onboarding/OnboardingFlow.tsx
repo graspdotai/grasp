@@ -138,7 +138,7 @@ export default function OnboardingFlow() {
     : { duration: 0.22, ease: [0, 0, 0.2, 1] as const };
 
   return (
-    <main className="min-h-screen bg-white px-5 py-5 text-slate-900 sm:px-8 sm:py-6 max-w-7xl mx-auto">
+    <main className="min-h-screen bg-white px-5 py-5 text-slate-900 sm:px-8 sm:py-6">
       <header className="flex items-center justify-between">
         <Link
           aria-label="Grasp home"

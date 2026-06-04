@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${googleSans.className} ${bricolageGrotesque.variable} ${dmSerif.variable} antialiased max-w-7xl mx-auto`}
+        className={`${googleSans.className} ${bricolageGrotesque.variable} ${dmSerif.variable} antialiased`}
       >
         {children}
       </body>
