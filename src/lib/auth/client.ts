@@ -7,6 +7,10 @@ function appUrl(path: string) {
   return `${window.location.origin}${path}`;
 }
 
+function authCallbackUrl(nextPath: string) {
+  return appUrl(`/auth/callback?next=${encodeURIComponent(nextPath)}`);
+}
+
 function errorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -25,7 +29,7 @@ export async function signUpWithEmail(
       email,
       password,
       options: {
-        emailRedirectTo: appUrl("/onboarding"),
+        emailRedirectTo: authCallbackUrl("/onboarding"),
       },
     });
 
@@ -76,7 +80,7 @@ export async function signInWithGoogle(
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: appUrl(redirectPath),
+        redirectTo: authCallbackUrl(redirectPath),
       },
     });
 

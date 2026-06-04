@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 const AUTH_ROUTES = ["/signin", "/signup"];
+const PUBLIC_ROUTES = ["/auth/callback"];
 
 function hasSupabaseConfig() {
   return (
@@ -12,6 +13,12 @@ function hasSupabaseConfig() {
 
 function isAuthRoute(pathname: string) {
   return AUTH_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
+function isPublicRoute(pathname: string) {
+  return PUBLIC_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 }
@@ -56,7 +63,7 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  if (!user && !isAuthRoute(pathname)) {
+  if (!user && !isAuthRoute(pathname) && !isPublicRoute(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/signin";
     redirectUrl.searchParams.set(
