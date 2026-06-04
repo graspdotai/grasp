@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { Google_Sans, DM_Serif_Display } from "next/font/google";
+import {
+  Bricolage_Grotesque,
+  DM_Serif_Display,
+  Google_Sans_Code,
+} from "next/font/google";
 import "./globals.css";
 
-const googleSans = Google_Sans({
+const googleSans = Google_Sans_Code({
   subsets: ["latin"],
 });
 
@@ -10,6 +14,11 @@ const dmSerif = DM_Serif_Display({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-serif",
+});
+
+const bricolageGrotesque = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-bricolage-grotesque",
 });
 
 export const metadata: Metadata = {
@@ -25,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${googleSans.className} ${dmSerif.variable} antialiased max-w-7xl mx-auto`}
+        className={`${googleSans.className} ${bricolageGrotesque.variable} ${dmSerif.variable} antialiased max-w-7xl mx-auto`}
       >
         {children}
       </body>

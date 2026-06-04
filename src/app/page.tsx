@@ -29,7 +29,7 @@ export default function Home() {
   const progress = 40; // 0 = not started, 1–100 = in progress
 
   return (
-    <main className="p-6">
+    <main className="p-6 max-w-7xl mx-auto">
       <Navbar />
 
       <div className="flex items-center gap-3">
