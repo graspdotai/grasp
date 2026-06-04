@@ -301,7 +301,7 @@ export default function CoursePage({
   const [isTTSLoading, setIsTTSLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [ttsFallback, setTtsFallback] = useState<boolean>(false);
-  const [isQuestionPanelOpen, setIsQuestionPanelOpen] = useState<boolean>(true);
+  const [isQuestionPanelOpen, setIsQuestionPanelOpen] = useState<boolean>(false);
   const [questionDraft, setQuestionDraft] = useState<string>("");
   const [isAnsweringQuestion, setIsAnsweringQuestion] =
     useState<boolean>(false);
@@ -942,7 +942,7 @@ export default function CoursePage({
 
             {/* 2. Main split lecture screen */}
             <div className="grow grid grid-cols-1 lg:grid-cols-12 gap-5 my-6 overflow-hidden min-h-0">
-              {/* QUESTION CHAT PANEL */}
+              {/* Voice question recorder */}
               <CourseTutorPanel
                 isOpen={isQuestionPanelOpen}
                 onToggle={() => setIsQuestionPanelOpen((prev) => !prev)}
@@ -956,9 +956,7 @@ export default function CoursePage({
               />
 
               <div
-                className={`bg-neutral-900 rounded-2xl p-8 md:p-12 flex flex-col h-full overflow-y-auto transition-[grid-column] duration-200 ${
-                  isQuestionPanelOpen ? "lg:col-span-9" : "lg:col-span-11"
-                }`}
+                className="bg-neutral-900 rounded-2xl p-8 md:p-12 flex flex-col h-full overflow-y-auto lg:col-span-12"
               >
                 <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full my-auto">
                   <span className="text-xs font-bold text-primary tracking-widest uppercase">
