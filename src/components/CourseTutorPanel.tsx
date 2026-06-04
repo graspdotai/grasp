@@ -1,6 +1,13 @@
 "use client";
 
-import { CaretRightIcon, PaperPlaneTiltIcon } from "@phosphor-icons/react";
+import { useState, useEffect, useRef } from "react";
+import {
+  CaretRightIcon,
+  CaretDownIcon,
+  PaperPlaneTiltIcon,
+  PlayIcon,
+  PauseIcon,
+} from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import LogoIcon from "@/components/Logo";
 
@@ -8,6 +15,8 @@ export interface TutorMessage {
   id: string;
   role: "student" | "assistant";
   text: string;
+  audioUrl?: string;
+  audioLoading?: boolean;
 }
 
 interface Props {
@@ -20,6 +29,123 @@ interface Props {
   onSubmitQuestion: (question: string) => void;
   draft: string;
   onDraftChange: (value: string) => void;
+}
+
+const BAR_HEIGHTS = [4, 8, 12, 7, 10, 5, 9, 6];
+
+function AudioMessage({ message }: { message: TutorMessage }) {
+  const [playing, setPlaying] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!message.audioUrl) return;
+    const audio = new Audio(message.audioUrl);
+    audioRef.current = audio;
+    audio.onended = () => setPlaying(false);
+    audio.play().then(() => setPlaying(true)).catch(() => {});
+    return () => { audio.pause(); };
+  }, [message.audioUrl]);
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      audio.play().then(() => setPlaying(true)).catch(() => {});
+    }
+  };
+
+  return (
+    <div className="flex gap-3 justify-start items-start">
+      <span className="flex-shrink-0 mt-0.5 w-7 h-7 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center overflow-hidden">
+        <span className="scale-[0.32] origin-center block">
+          <LogoIcon />
+        </span>
+      </span>
+
+      <div className="flex flex-col gap-2 max-w-[88%]">
+        {/* Loading state */}
+        {message.audioLoading && (
+          <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-3">
+            <span className="text-sm text-neutral-500">Generating audio</span>
+            <div className="flex items-end gap-0.5 h-4">
+              {BAR_HEIGHTS.map((h, i) => (
+                <motion.div
+                  key={i}
+                  className="w-0.5 bg-neutral-600 rounded-full"
+                  animate={{ height: [h, h + 4, h] }}
+                  transition={{ repeat: Infinity, duration: 0.6 + i * 0.06, ease: "easeInOut", delay: i * 0.05 }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Audio player */}
+        {message.audioUrl && (
+          <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-3">
+            <div className="flex items-end gap-0.5 h-5 flex-1">
+              {BAR_HEIGHTS.map((h, i) => (
+                <motion.div
+                  key={i}
+                  className="w-1 bg-primary/60 rounded-full"
+                  animate={playing ? { height: [h, h + 10, h] } : { height: h }}
+                  transition={{ repeat: Infinity, duration: 0.45 + i * 0.06, ease: "easeInOut", delay: i * 0.04 }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={togglePlay}
+              className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/15 hover:bg-primary/30 flex items-center justify-center text-primary transition-all"
+            >
+              {playing
+                ? <PauseIcon size={14} weight="fill" />
+                : <PlayIcon size={14} weight="fill" />}
+            </button>
+          </div>
+        )}
+
+        {/* Transcript toggle — only once audio is ready */}
+        {message.audioUrl && (
+          <>
+            <button
+              onClick={() => setTranscriptOpen((p) => !p)}
+              className="flex items-center gap-1 text-xs text-neutral-600 hover:text-neutral-400 transition-colors self-start"
+            >
+              <CaretDownIcon
+                size={11}
+                weight="bold"
+                className={`transition-transform duration-200 ${transcriptOpen ? "" : "-rotate-90"}`}
+              />
+              {transcriptOpen ? "Hide transcript" : "Show transcript"}
+            </button>
+
+            <AnimatePresence initial={false}>
+              {transcriptOpen && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="text-sm text-neutral-400 leading-relaxed overflow-hidden"
+                >
+                  {message.text}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+
+        {/* Fallback: show text if TTS failed (no audioUrl, not loading) */}
+        {!message.audioUrl && !message.audioLoading && (
+          <p className="text-sm text-neutral-400 leading-relaxed pt-0.5">{message.text}</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function CourseTutorPanel({
@@ -84,10 +210,8 @@ export default function CourseTutorPanel({
                 </span>
               </span>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-white leading-none">Tutor</p>
-                <p className="text-[10px] text-neutral-500 mt-0.5 leading-none truncate">
-                  {sectionTitle}
-                </p>
+                <p className="text-sm font-semibold text-white leading-none">Tutor</p>
+                <p className="text-xs text-neutral-500 mt-0.5 leading-none truncate">{sectionTitle}</p>
               </div>
             </div>
 
@@ -95,22 +219,27 @@ export default function CourseTutorPanel({
             <div className="min-h-0 grow overflow-y-auto px-4 py-4 flex flex-col gap-5">
               {messages.map((message) => {
                 const isStudent = message.role === "student";
+
+                if (!isStudent && (message.audioLoading || message.audioUrl !== undefined)) {
+                  return <AudioMessage key={message.id} message={message} />;
+                }
+
                 return (
                   <div
                     key={message.id}
-                    className={`flex gap-2.5 ${isStudent ? "justify-end" : "justify-start items-start"}`}
+                    className={`flex gap-3 ${isStudent ? "justify-end" : "justify-start items-start"}`}
                   >
                     {!isStudent && (
-                      <span className="flex-shrink-0 mt-0.5 w-6 h-6 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center overflow-hidden">
+                      <span className="flex-shrink-0 mt-0.5 w-7 h-7 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center overflow-hidden">
                         <span className="scale-[0.32] origin-center block">
                           <LogoIcon />
                         </span>
                       </span>
                     )}
                     <div
-                      className={`max-w-[88%] text-xs leading-relaxed ${
+                      className={`max-w-[88%] text-sm leading-relaxed ${
                         isStudent
-                          ? "bg-white/10 border border-white/[0.08] text-neutral-200 px-3.5 py-2.5 rounded-2xl rounded-br-sm"
+                          ? "bg-white/10 border border-white/[0.08] text-neutral-200 px-4 py-2.5 rounded-2xl rounded-br-sm"
                           : "text-neutral-400 pt-0.5"
                       }`}
                     >
@@ -121,8 +250,8 @@ export default function CourseTutorPanel({
               })}
 
               {isAnswering && (
-                <div className="flex gap-2.5 justify-start items-center" aria-live="polite">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center overflow-hidden">
+                <div className="flex gap-3 justify-start items-center" aria-live="polite">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center overflow-hidden">
                     <span className="scale-[0.32] origin-center block">
                       <LogoIcon />
                     </span>
@@ -141,14 +270,14 @@ export default function CourseTutorPanel({
             </div>
 
             {/* Quick prompts */}
-            <div className="flex-shrink-0 px-4 pb-2.5 flex gap-1.5 overflow-x-auto scrollbar-none">
+            <div className="flex-shrink-0 px-4 pb-3 flex gap-1.5 overflow-x-auto scrollbar-none">
               {suggestedQuestions.map((question) => (
                 <button
                   type="button"
                   key={question}
                   onClick={() => onSubmitQuestion(question)}
                   disabled={isAnswering}
-                  className="flex-shrink-0 rounded-full border border-white/[0.08] px-2.5 py-1 text-[10px] font-medium text-neutral-500 hover:text-neutral-200 hover:border-white/20 disabled:opacity-40 disabled:pointer-events-none transition-all"
+                  className="flex-shrink-0 rounded-full border border-white/[0.08] px-3 py-1 text-xs font-medium text-neutral-500 hover:text-neutral-200 hover:border-white/20 disabled:opacity-40 disabled:pointer-events-none transition-all"
                 >
                   {question}
                 </button>
@@ -170,7 +299,7 @@ export default function CourseTutorPanel({
                   className="w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-sm text-white placeholder:text-neutral-700 focus:outline-none disabled:opacity-50 leading-relaxed"
                 />
                 <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
-                  <span className="text-[10px] text-neutral-700 select-none">⏎ send</span>
+                  <span className="text-xs text-neutral-700 select-none">⏎ send</span>
                   <button
                     type="submit"
                     disabled={!draft.trim() || isAnswering}

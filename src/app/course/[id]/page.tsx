@@ -15,7 +15,6 @@ import {
   TranslateIcon,
   CaretLeftIcon,
   CaretRightIcon,
-  HeadphonesIcon,
   ClockIcon,
   ArrowRightIcon,
 } from "@phosphor-icons/react";
@@ -304,10 +303,8 @@ export default function CoursePage({
     Record<string, TutorMessage[]>
   >({});
 
-  // Audio player references
+  // Audio player reference (lecture)
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Separate ref for spoken tutor answers so they don't clash with lecture audio
-  const answerAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const activeSection =
     sections.find((s) => s.id === activeSectionId) || sections[0];
@@ -350,25 +347,30 @@ export default function CoursePage({
     );
   };
 
-  const speakAnswer = async (text: string) => {
-    if (answerAudioRef.current) {
-      answerAudioRef.current.pause();
-      answerAudioRef.current = null;
-    }
+  const speakAnswer = async (text: string, messageId: string, sectionId: string) => {
     try {
       const res = await fetch("/api/aethex/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, language, streaming: false }),
       });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error();
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      answerAudioRef.current = audio;
-      audio.onended = () => URL.revokeObjectURL(url);
-      audio.play().catch(() => {});
-    } catch {}
+      setQuestionThreads((prev) => ({
+        ...prev,
+        [sectionId]: (prev[sectionId] || []).map((m) =>
+          m.id === messageId ? { ...m, audioLoading: false, audioUrl: url } : m,
+        ),
+      }));
+    } catch {
+      setQuestionThreads((prev) => ({
+        ...prev,
+        [sectionId]: (prev[sectionId] || []).map((m) =>
+          m.id === messageId ? { ...m, audioLoading: false } : m,
+        ),
+      }));
+    }
   };
 
   const submitQuestion = async (question: string) => {
@@ -412,16 +414,17 @@ export default function CoursePage({
 
       const data = await res.json();
       const answerText = res.ok ? data.answer : "Something went wrong. Please try again.";
+      const msgId = `answer-${Date.now()}`;
 
       setQuestionThreads((prev) => ({
         ...prev,
         [sectionId]: [
           ...(prev[sectionId] || []),
-          { id: `answer-${Date.now()}`, role: "assistant", text: answerText },
+          { id: msgId, role: "assistant", text: answerText, audioLoading: res.ok },
         ],
       }));
 
-      if (res.ok) speakAnswer(answerText);
+      if (res.ok) speakAnswer(answerText, msgId, sectionId);
     } catch {
       setQuestionThreads((prev) => ({
         ...prev,
@@ -577,7 +580,6 @@ export default function CoursePage({
   useEffect(() => {
     return () => {
       audioRef.current?.pause();
-      answerAudioRef.current?.pause();
     };
   }, []);
 
