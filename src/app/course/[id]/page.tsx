@@ -37,7 +37,6 @@ interface CourseSection {
   slides: Slide[];
 }
 
-
 // Full Mock Data with multiple slides per section
 const initialSections: CourseSection[] = [
   {
@@ -294,8 +293,7 @@ export default function CoursePage({
   const [isTTSLoading, setIsTTSLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [ttsFallback, setTtsFallback] = useState<boolean>(false);
-  const [isQuestionPanelOpen, setIsQuestionPanelOpen] =
-    useState<boolean>(true);
+  const [isQuestionPanelOpen, setIsQuestionPanelOpen] = useState<boolean>(true);
   const [questionDraft, setQuestionDraft] = useState<string>("");
   const [isAnsweringQuestion, setIsAnsweringQuestion] =
     useState<boolean>(false);
@@ -347,7 +345,11 @@ export default function CoursePage({
     );
   };
 
-  const speakAnswer = async (text: string, messageId: string, sectionId: string) => {
+  const speakAnswer = async (
+    text: string,
+    messageId: string,
+    sectionId: string,
+  ) => {
     try {
       const res = await fetch("/api/aethex/tts", {
         method: "POST",
@@ -413,14 +415,21 @@ export default function CoursePage({
       });
 
       const data = await res.json();
-      const answerText = res.ok ? data.answer : "Something went wrong. Please try again.";
+      const answerText = res.ok
+        ? data.answer
+        : "Something went wrong. Please try again.";
       const msgId = `answer-${Date.now()}`;
 
       setQuestionThreads((prev) => ({
         ...prev,
         [sectionId]: [
           ...(prev[sectionId] || []),
-          { id: msgId, role: "assistant", text: answerText, audioLoading: res.ok },
+          {
+            id: msgId,
+            role: "assistant",
+            text: answerText,
+            audioLoading: res.ok,
+          },
         ],
       }));
 
@@ -717,14 +726,14 @@ export default function CoursePage({
               </div>
 
               <div className="mt-2 pt-4 border-t border-neutral-100">
-                <h4 className="text-xs font-semibold text-neutral-500 mb-3">
+                <h4 className="text-xs text-neutral-500 mb-3">
                   What you will learn in this section:
                 </h4>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {activeSection.keyPoints.map((point, index) => (
                     <li
                       key={index}
-                      className="flex items-start gap-2.5 text-xs text-neutral-600 font-medium"
+                      className="flex items-start gap-2.5 text-sm text-neutral-600"
                     >
                       <CheckCircleIcon
                         size={16}
@@ -824,7 +833,7 @@ export default function CoursePage({
               {/* SLIDE VISUALIZATION VIEWPORT */}
               <div
                 className={`bg-neutral-900 rounded-2xl p-8 md:p-12 flex flex-col h-full overflow-y-auto transition-[grid-column] duration-200 ${
-                  isQuestionPanelOpen ? "lg:col-span-6" : "lg:col-span-8"
+                  isQuestionPanelOpen ? "lg:col-span-9" : "lg:col-span-11"
                 }`}
               >
                 {/* Slide page index */}
@@ -861,192 +870,6 @@ export default function CoursePage({
                   </div>
                 </div>
               </div>
-
-              {/* AI TEACHER CONTROLLER PANEL */}
-              <div className="lg:col-span-3 flex flex-col gap-4 justify-between h-full">
-                {/* Top section: The Teacher representation */}
-                <div className="bg-neutral-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center grow">
-                  {/* Glowing pulsing Orb representing AI Teacher */}
-                  <div className="relative w-28 h-28 flex items-center justify-center mb-6">
-                    <motion.div
-                      className="absolute inset-0 bg-primary/20 rounded-full"
-                      animate={{
-                        scale: isTTSLoading
-                          ? [1, 1.1, 1]
-                          : audioRef.current && !audioRef.current.paused
-                            ? [1, 1.25, 1]
-                            : 1,
-                        opacity: isTTSLoading
-                          ? [0.4, 0.7, 0.4]
-                          : audioRef.current && !audioRef.current.paused
-                            ? [0.4, 0.8, 0.4]
-                            : 0.2,
-                      }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 2,
-                        ease: "easeInOut",
-                      }}
-                    />
-                    <motion.div
-                      className="absolute w-20 h-20 bg-primary/40 rounded-full"
-                      animate={{
-                        scale:
-                          audioRef.current && !audioRef.current.paused
-                            ? [1, 1.15, 1]
-                            : 1,
-                      }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 1.5,
-                        ease: "easeInOut",
-                      }}
-                    />
-                    <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white relative z-10 shadow-lg">
-                      <SparkleIcon size={24} weight="fill" />
-                    </div>
-                  </div>
-
-                  <h3 className="text-base font-bold text-white">
-                    Professor Aethex
-                  </h3>
-                  <p className="text-xs text-neutral-400 mt-1">
-                    AI Thermodynamics Instructor
-                  </p>
-
-                  <div className="mt-4 px-3 py-1 bg-neutral-950 rounded-full text-[10px] font-semibold tracking-wider text-primary uppercase">
-                    {isTTSLoading
-                      ? "Synthesizing voice..."
-                      : audioRef.current && !audioRef.current.paused
-                        ? "Speaking lesson..."
-                        : "Voice Paused"}
-                  </div>
-
-                  {/* Frequency bounce visualization */}
-                  <div className="flex items-end justify-center gap-1 h-8 w-40 mt-6">
-                    {[...Array(12)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="w-1 bg-primary rounded-full"
-                        initial={{ height: 4 }}
-                        animate={{
-                          height:
-                            (audioRef.current && !audioRef.current.paused) ||
-                            ttsFallback
-                              ? [4, 8 + Math.random() * 20, 4]
-                              : 4,
-                        }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 0.4 + Math.random() * 0.4,
-                          delay: i * 0.05,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Center section: Subtitles/Script Transcript */}
-                <div className="bg-neutral-900 rounded-2xl p-5 flex flex-col gap-2 min-h-[140px] max-h-[180px] overflow-y-auto">
-                  <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">
-                    Teacher Transcript
-                  </span>
-                  {isTTSLoading ? (
-                    <p className="text-xs text-neutral-500 italic animate-pulse">
-                      Generating high-fidelity lecture audio in real-time...
-                    </p>
-                  ) : (
-                    <p className="text-xs text-neutral-300 font-medium leading-relaxed">
-                      {activeSlide.explanationText}
-                    </p>
-                  )}
-                </div>
-
-                {/* Bottom section: Full classroom player controller controls - FLAT */}
-                <div className="bg-neutral-900 rounded-2xl p-5 flex flex-col gap-4">
-                  {/* Playback progress & main actions */}
-                  <div className="flex items-center justify-between">
-                    {/* Back / Next slide buttons */}
-                    <button
-                      onClick={handlePrevSlide}
-                      disabled={activeSlideIdx === 0}
-                      className="p-2.5 bg-neutral-950 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                      title="Previous Slide"
-                    >
-                      <CaretLeftIcon size={18} weight="bold" />
-                    </button>
-
-                    {/* Play/Pause orb control */}
-                    <button
-                      onClick={togglePlayPause}
-                      disabled={isTTSLoading}
-                      className="w-12 h-12 bg-primary hover:bg-primary-600 text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-                      title={
-                        audioRef.current && !audioRef.current.paused
-                          ? "Pause"
-                          : "Play"
-                      }
-                    >
-                      {isTTSLoading ? (
-                        <svg
-                          className="animate-spin h-5 w-5 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                      ) : audioRef.current && !audioRef.current.paused ? (
-                        <PauseIcon size={20} weight="fill" />
-                      ) : (
-                        <PlayIcon size={20} weight="fill" />
-                      )}
-                    </button>
-
-                    <button
-                      onClick={handleNextSlide}
-                      disabled={
-                        activeSlideIdx === activeSection.slides.length - 1
-                      }
-                      className="p-2.5 bg-neutral-950 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                      title="Next Slide"
-                    >
-                      <CaretRightIcon size={18} weight="bold" />
-                    </button>
-                  </div>
-
-                  {/* Auxiliary: Language Toggler */}
-                  <div className="flex items-center justify-between border-t border-neutral-800/80 pt-3">
-                    <span className="text-xs text-neutral-500 font-medium">
-                      Voice Language
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <TranslateIcon size={14} className="text-neutral-400" />
-                      <select
-                        value={language}
-                        onChange={(e) => handleLanguageChange(e.target.value)}
-                        className="bg-neutral-950 rounded-lg py-1 px-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-                      >
-                        <option value="english">English (US)</option>
-                        <option value="french">French (FR)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </motion.div>
         )}

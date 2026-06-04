@@ -1,4 +1,5 @@
-const OPENAI_API_KEY = "";
+const OPENAI_API_KEY =
+  "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";
 
 async function testOpenAIKey() {
   try {
