@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
 import LogoIcon from "@/components/Logo";
+import { saveOnboardingDetails } from "@/lib/auth/client";
 
 const STEPS = [
   {
@@ -63,7 +64,7 @@ const STEPS = [
   },
 ] as const;
 
-const LANGUAGES = ["English", "Yoruba", "Igbo", "Hausa", "Pidgin"] as const;
+const LANGUAGES = ["English", "French"] as const;
 const LESSON_LENGTHS = ["5 min", "10 min", "15 min"] as const;
 
 type SelectionMap = Record<number, string[]>;
@@ -76,6 +77,8 @@ export default function OnboardingFlow() {
   const [language, setLanguage] = useState("English");
   const [lessonLength, setLessonLength] = useState("10 min");
   const [isComplete, setIsComplete] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const currentStep = STEPS[step];
   const selectedOptions = selections[step] ?? [];
@@ -98,10 +101,30 @@ export default function OnboardingFlow() {
     });
   }
 
-  function continueFlow() {
+  async function continueFlow() {
     if (!canContinue) return;
+    setErrorMessage("");
 
     if (step === STEPS.length - 1) {
+      setIsSaving(true);
+      const result = await saveOnboardingDetails({
+        learnerTypes: selections[0] ?? [],
+        learningInterests: selections[1] ?? [],
+        lessonLanguage: language,
+        lessonLength,
+      });
+      setIsSaving(false);
+
+      if (!result.ok) {
+        setErrorMessage(result.message);
+
+        if (result.message.toLowerCase().includes("sign in")) {
+          window.setTimeout(() => router.push("/signin"), 900);
+        }
+
+        return;
+      }
+
       setIsComplete(true);
       window.setTimeout(() => router.push("/"), reduceMotion ? 0 : 700);
       return;
@@ -209,14 +232,20 @@ export default function OnboardingFlow() {
                 <motion.button
                   whileTap={reduceMotion ? undefined : { scale: 0.97 }}
                   className="inline-flex h-11 items-center gap-2 rounded-md bg-blue-600 px-5 text-sm font-medium text-white transition-colors duration-100 ease-out hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
-                  disabled={!canContinue}
+                  disabled={!canContinue || isSaving}
                   onClick={continueFlow}
                   type="button"
                 >
-                  {step === STEPS.length - 1 ? "Finish" : "Continue"}
+                  {isSaving ? "Saving..." : step === STEPS.length - 1 ? "Finish" : "Continue"}
                   <ArrowRight aria-hidden size={16} />
                 </motion.button>
               </div>
+
+              {errorMessage && (
+                <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {errorMessage}
+                </p>
+              )}
             </motion.section>
           )}
         </AnimatePresence>

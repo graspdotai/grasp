@@ -5,14 +5,49 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import LogoIcon from "@/components/Logo";
 import { GoogleIcon, VisibilityIcon } from "@/components/auth/icons";
+import { signInWithGoogle, signUpWithEmail } from "@/lib/auth/client";
 
 export default function SignupForm() {
   const router = useRouter();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+    setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+    const result = await signUpWithEmail(email, password);
+
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setErrorMessage(result.message);
+      return;
+    }
+
+    if (result.needsEmailConfirmation) {
+      setSuccessMessage("Check your email to confirm your account, then come back to sign in.");
+      return;
+    }
+
     router.push("/onboarding");
+  }
+
+  async function handleGoogleSignUp() {
+    setErrorMessage("");
+    setSuccessMessage("");
+    const result = await signInWithGoogle();
+
+    if (!result.ok) {
+      setErrorMessage(result.message);
+    }
   }
 
   return (
@@ -97,15 +132,29 @@ export default function SignupForm() {
             </div>
 
             <button
-              className="mt-5 h-10 w-full rounded-sm bg-[#2563eb] text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
+              className="mt-5 h-10 w-full rounded-sm bg-[#2563eb] text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={isSubmitting}
               type="submit"
             >
-              Sign Up
+              {isSubmitting ? "Creating account..." : "Sign Up"}
             </button>
           </form>
 
+          {errorMessage && (
+            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+              {errorMessage}
+            </p>
+          )}
+
+          {successMessage && (
+            <p className="mt-3 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-700">
+              {successMessage}
+            </p>
+          )}
+
           <button
             className="mt-3.5 flex h-10 w-full items-center justify-center gap-4 rounded-sm border border-slate-300 bg-white text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
+            onClick={handleGoogleSignUp}
             type="button"
           >
             <GoogleIcon />
