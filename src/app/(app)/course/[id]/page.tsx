@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import CourseTutorPanel, { TutorMessage } from "@/components/CourseTutorPanel";
 import {
@@ -18,22 +17,18 @@ import {
   CaretRightIcon,
   ClockIcon,
   ArrowRightIcon,
-  TrashIcon,
+  GearIcon,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionReferenceLinks from "@/components/SectionReferenceLinks";
 import {
-  deleteCourse,
   isUuid,
   onboardingLanguageToTts,
   updateModuleProgress,
   type CourseSection,
   type Slide,
 } from "@/lib/courseApi";
-import { useQueryClient } from "@tanstack/react-query";
 import { useCourse } from "@/hooks/useCourse";
-import { queryKeys } from "@/lib/queryKeys";
-import { getLocalUserId } from "@/lib/userSession";
 import {
   sourcesForSection,
   type CourseSourceLink,
@@ -279,12 +274,9 @@ export default function CoursePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const resolvedParams = use(params);
   const courseId = resolvedParams.id;
   const isLiveCourse = isUuid(courseId);
-  const [isDeletingCourse, setIsDeletingCourse] = useState(false);
 
   // State management
   const [sections, setSections] = useState<CourseSection[]>(
@@ -697,25 +689,6 @@ export default function CoursePage({
     ? sourcesForSection(activeSection.title, courseSources)
     : [];
 
-  async function handleDeleteCourse() {
-    if (!isLiveCourse) return;
-    if (!window.confirm(`Delete "${courseTitle}"? This cannot be undone.`)) return;
-
-    setIsDeletingCourse(true);
-    try {
-      const userId = getLocalUserId();
-      await deleteCourse(courseId, userId ?? undefined);
-      void queryClient.removeQueries({ queryKey: queryKeys.course(courseId) });
-      if (userId) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.courses(userId) });
-      }
-      router.push("/");
-    } catch (err) {
-      setCourseLoadError(err instanceof Error ? err.message : "Delete failed");
-      setIsDeletingCourse(false);
-    }
-  }
-
   if (isLiveCourse && !isCourseReady) {
     return (
       <main className="p-6 max-w-7xl mx-auto min-h-screen bg-white">
@@ -772,15 +745,13 @@ export default function CoursePage({
           <span>Back to Courses</span>
         </Link>
         {isLiveCourse && (
-          <button
-            type="button"
-            onClick={handleDeleteCourse}
-            disabled={isDeletingCourse}
-            className="inline-flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+          <Link
+            href={`/course/${courseId}/settings`}
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900"
           >
-            <TrashIcon size={16} weight="bold" />
-            {isDeletingCourse ? "Deleting…" : "Delete course"}
-          </button>
+            <GearIcon size={16} weight="bold" />
+            Settings
+          </Link>
         )}
       </div>
 
