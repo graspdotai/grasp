@@ -4,6 +4,7 @@ import type { OnboardingProfile } from "@/lib/onboarding";
 import { extractFullNameFromMetadata } from "@/lib/profileDisplay";
 import { HttpError } from "@/server/errors";
 import { getSupabaseAdminClient } from "@/server/supabase";
+import type { TablesInsert, TablesUpdate } from "@/types/database";
 
 export async function upsertProfileFromOnboarding(
   userId: string,
@@ -14,7 +15,7 @@ export async function upsertProfileFromOnboarding(
   const supabase = getSupabaseAdminClient();
   const now = new Date().toISOString();
 
-  const row: Record<string, unknown> = {
+  const row: TablesInsert<"profiles"> = {
     id: userId,
     email: email ?? null,
     onboarding_completed: true,
@@ -23,11 +24,8 @@ export async function upsertProfileFromOnboarding(
     lesson_language: onboarding.language,
     lesson_length: onboarding.lessonLength,
     updated_at: now,
+    ...(fullName?.trim() ? { full_name: fullName.trim() } : {}),
   };
-
-  if (fullName?.trim()) {
-    row.full_name = fullName.trim();
-  }
 
   const { error } = await supabase.from("profiles").upsert(row, { onConflict: "id" });
 
@@ -72,7 +70,7 @@ export async function updateProfileSettings(
 ): Promise<void> {
   const supabase = getSupabaseAdminClient();
   const now = new Date().toISOString();
-  const updates: Record<string, unknown> = { updated_at: now };
+  const updates: TablesUpdate<"profiles"> = { updated_at: now };
 
   if (input.fullName !== undefined) {
     const trimmed = input.fullName.trim();

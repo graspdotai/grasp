@@ -1,24 +1,26 @@
 import { z } from "zod";
 import { formatOnboardingForPrompt, type OnboardingProfile } from "@/lib/onboarding";
+import { estimateDurationFromSlides } from "@/lib/lessonDuration";
 import { getOpenAiApiKey } from "@/server/env";
 import { HttpError } from "@/server/errors";
 
-const moduleContentSchema = z.object({
-  duration: z.string().min(3),
-  keyPoints: z.array(z.string().min(3)).min(4).max(8),
+const moduleSlidesSchema = z.object({
+  keyPoints: z.array(z.string().min(3)).min(5).max(10),
   slides: z
     .array(
       z.object({
         title: z.string().min(3),
         points: z.array(z.string().min(3)).min(3).max(6),
-        explanationText: z.string().min(80),
+        explanationText: z.string().min(120),
       })
     )
-    .min(4)
-    .max(6),
+    .min(6)
+    .max(10),
 });
 
-export type ModuleContent = z.infer<typeof moduleContentSchema>;
+export type ModuleContent = z.infer<typeof moduleSlidesSchema> & {
+  duration: string;
+};
 
 export async function generateModuleContent(input: {
   topic: string;
@@ -35,7 +37,6 @@ export async function generateModuleContent(input: {
     throw new HttpError(500, "OPENAI_NOT_CONFIGURED", "OpenAI is not configured. Set OPENAI_API_KEY.");
   }
 
-  const targetDuration = input.onboarding?.lessonLength ?? "10 min";
   const sourcesBlock =
     input.sourceHighlights.length > 0
       ? input.sourceHighlights.slice(0, 12).map((h) => `- ${h}`).join("\n")
@@ -45,12 +46,18 @@ export async function generateModuleContent(input: {
     ? `\nLearner profile:\n${formatOnboardingForPrompt(input.onboarding)}\n`
     : "";
 
-  const systemPrompt = `You are a course author for Grasp, a voice-first learning platform.
-Generate structured module content as JSON only.
-Stay grounded in the provided source highlights when available.
-Use plain language suitable for ${input.learnerLevel} learners.
-When a preferred lesson language is given, write slide text in that language but keep JSON keys in English.
-Do not use markdown.`;
+  const systemPrompt = `You are Professor Aethex on Grasp — a warm, expert teacher recording a voice lesson for one student.
+Write content that will be read aloud by text-to-speech. Sound like a real instructor in a classroom, not a report, blog post, or slide deck.
+
+Voice rules (critical):
+- Speak directly to the learner ("you", "we", "let's").
+- Teach step by step with examples and short checks for understanding.
+- NEVER say "this slide", "on this slide", "the next slide", "in this module", "as mentioned above", or "this section".
+- NEVER use report language ("this document", "the following points", "we will now examine").
+- No markdown. No bullet symbols in explanationText — bullets belong only in the points array.
+- Stay grounded in source highlights when provided.
+Use plain language for ${input.learnerLevel} learners.
+When a lesson language is specified, write learner-facing text in that language; keep JSON keys in English.`;
 
   const userPrompt = `Topic: ${input.topic}
 Goal: ${input.goal}
@@ -65,25 +72,25 @@ ${input.learningObjectives.map((o) => `- ${o}`).join("\n")}
 Source highlights:
 ${sourcesBlock}
 
-Return JSON with this exact shape:
+Return JSON only:
 {
-  "duration": "${targetDuration}",
-  "keyPoints": ["string", "string"],
+  "keyPoints": ["string"],
   "slides": [
     {
-      "title": "string",
-      "points": ["bullet", "bullet", "bullet"],
-      "explanationText": "A full spoken lesson for this slide (120-180 words)"
+      "title": "short lesson beat title",
+      "points": ["spoken bullet", "spoken bullet", "spoken bullet"],
+      "explanationText": "full voice script the teacher reads aloud"
     }
   ]
 }
 
-Rules:
-- 4 to 5 slides per module with substantive teaching content
-- 4 to 5 keyPoints for the module
-- 3 to 4 bullet points per slide (specific, not generic)
-- explanationText is conversational and TTS-friendly (120-180 words per slide)
-- duration should be about ${targetDuration}`;
+Content rules:
+- 6 to 8 slides per module — exhaustive coverage, not a skim
+- 5 to 8 keyPoints summarizing the module
+- 3 to 5 points per slide (concrete, not generic)
+- Each explanationText: 200–320 words of continuous spoken teaching for that beat
+- Open with a hook, teach the idea, give an example, close with a takeaway
+- Do NOT include duration — we calculate it from word count`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -98,8 +105,8 @@ Rules:
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 4096,
-      temperature: 0.4,
+      max_tokens: 8192,
+      temperature: 0.45,
     }),
   });
 
@@ -124,7 +131,7 @@ Rules:
     throw new HttpError(502, "OPENAI_INVALID_JSON", "OpenAI returned invalid JSON.");
   }
 
-  const validated = moduleContentSchema.safeParse(parsed);
+  const validated = moduleSlidesSchema.safeParse(parsed);
   if (!validated.success) {
     throw new HttpError(
       502,
@@ -133,5 +140,10 @@ Rules:
     );
   }
 
-  return validated.data;
+  const duration = estimateDurationFromSlides(validated.data.slides);
+
+  return {
+    ...validated.data,
+    duration,
+  };
 }

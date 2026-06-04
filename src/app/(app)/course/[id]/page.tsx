@@ -24,12 +24,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import SectionReferenceLinks from "@/components/SectionReferenceLinks";
 import {
   deleteCourse,
-  fetchCourse,
   isUuid,
   onboardingLanguageToTts,
   updateModuleProgress,
   type CourseSection,
+  type Slide,
 } from "@/lib/courseApi";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCourse } from "@/hooks/useCourse";
+import { queryKeys } from "@/lib/queryKeys";
 import { getLocalUserId } from "@/lib/userSession";
 import {
   sourcesForSection,
@@ -277,6 +280,7 @@ export default function CoursePage({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const resolvedParams = use(params);
   const courseId = resolvedParams.id;
   const isLiveCourse = isUuid(courseId);
@@ -298,7 +302,8 @@ export default function CoursePage({
     isLiveCourse ? "" : "Intermediate",
   );
   const [courseLoadError, setCourseLoadError] = useState<string | null>(null);
-  const [isCourseLoading, setIsCourseLoading] = useState(isLiveCourse);
+  const courseQuery = useCourse(courseId);
+  const isCourseLoading = isLiveCourse && courseQuery.isLoading;
   const [activeSectionId, setActiveSectionId] = useState<string>(
     isLiveCourse ? "" : "sec-3",
   );
@@ -345,44 +350,32 @@ export default function CoursePage({
   useEffect(() => {
     if (!isLiveCourse) return;
 
-    let cancelled = false;
-
-    async function loadCourse() {
-      setIsCourseLoading(true);
-      setCourseLoadError(null);
-
-      try {
-        const data = await fetchCourse(courseId);
-        if (cancelled) return;
-
-        setSections(data.sections);
-        setCourseSources(data.sources ?? []);
-        setCourseTitle(data.course.title);
-        setCourseSummary(data.course.summary || data.course.goal);
-        setLearnerLevelLabel(
-          data.course.learnerLevel.charAt(0).toUpperCase() +
-            data.course.learnerLevel.slice(1),
-        );
-        setActiveSectionId(data.sections[0]?.id ?? "");
-        if (data.course.onboarding?.language) {
-          setLanguage(onboardingLanguageToTts(data.course.onboarding.language));
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setCourseLoadError(
-            err instanceof Error ? err.message : "Failed to load course",
-          );
-        }
-      } finally {
-        if (!cancelled) setIsCourseLoading(false);
-      }
+    if (courseQuery.error) {
+      setCourseLoadError(
+        courseQuery.error instanceof Error
+          ? courseQuery.error.message
+          : "Failed to load course",
+      );
+      return;
     }
 
-    void loadCourse();
-    return () => {
-      cancelled = true;
-    };
-  }, [courseId, isLiveCourse]);
+    if (!courseQuery.data) return;
+
+    setCourseLoadError(null);
+    const data = courseQuery.data;
+    setSections(data.sections);
+    setCourseSources(data.sources ?? []);
+    setCourseTitle(data.course.title);
+    setCourseSummary(data.course.summary || data.course.goal);
+    setLearnerLevelLabel(
+      data.course.learnerLevel.charAt(0).toUpperCase() +
+        data.course.learnerLevel.slice(1),
+    );
+    setActiveSectionId((prev) => prev || data.sections[0]?.id || "");
+    if (data.course.onboarding?.language) {
+      setLanguage(onboardingLanguageToTts(data.course.onboarding.language));
+    }
+  }, [courseQuery.data, courseQuery.error, isLiveCourse]);
 
   useEffect(() => {
     return () => {
@@ -406,14 +399,14 @@ export default function CoursePage({
         {
           id: `${activeSectionId}-intro`,
           role: "assistant",
-          text: `Ask me anything about ${activeSection.title}. I can explain the current slide, give an example, or help you review the key points.`,
+          text: `Ask me anything about ${activeSection.title}. I can explain what we're covering, give an example, or help you review the key points.`,
         },
       ]
     : [];
   const activeQuestionThread =
     questionThreads[activeSectionId] || defaultQuestionThread;
   const suggestedQuestions = [
-    "Explain this slide simply",
+    "Explain this simply",
     "Give me an example",
     "What should I remember?",
   ];
@@ -710,7 +703,12 @@ export default function CoursePage({
 
     setIsDeletingCourse(true);
     try {
-      await deleteCourse(courseId, getLocalUserId() ?? undefined);
+      const userId = getLocalUserId();
+      await deleteCourse(courseId, userId ?? undefined);
+      void queryClient.removeQueries({ queryKey: queryKeys.course(courseId) });
+      if (userId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.courses(userId) });
+      }
       router.push("/");
     } catch (err) {
       setCourseLoadError(err instanceof Error ? err.message : "Delete failed");

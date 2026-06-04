@@ -4,15 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRightIcon, TrashIcon } from "@phosphor-icons/react";
 import CourseThumbnail from "@/components/CourseThumbnail";
+import { useQueryClient } from "@tanstack/react-query";
 import { deleteCourse, type UserCourseSummary } from "@/lib/courseApi";
+import { queryKeys } from "@/lib/queryKeys";
 import { getLocalUserId } from "@/lib/userSession";
 
 interface CourseCardProps {
   course: UserCourseSummary;
-  onDeleted: (courseId: string) => void;
 }
 
-export default function CourseCard({ course, onDeleted }: CourseCardProps) {
+export default function CourseCard({ course }: CourseCardProps) {
+  const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +36,10 @@ export default function CourseCard({ course, onDeleted }: CourseCardProps) {
     try {
       const userId = getLocalUserId() ?? undefined;
       await deleteCourse(course.id, userId);
-      onDeleted(course.id);
+      if (userId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.courses(userId) });
+      }
+      void queryClient.removeQueries({ queryKey: queryKeys.course(course.id) });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
       setIsDeleting(false);

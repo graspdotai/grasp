@@ -1,29 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { PlusIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import CourseCard from "@/components/CourseCard";
-import { fetchUserCourses, type UserCourseSummary } from "@/lib/courseApi";
+import { useUserCourses } from "@/hooks/useCourses";
 import { getLocalUserId } from "@/lib/userSession";
 
 export default function Home() {
-  const [courses, setCourses] = useState<UserCourseSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const userId = getLocalUserId();
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
-
-    fetchUserCourses(userId)
-      .then(setCourses)
-      .finally(() => setIsLoading(false));
-  }, []);
-
+  const userId = getLocalUserId();
+  const { data: courses = [], isLoading, isFetched } = useUserCourses();
   const courseCount = courses.length;
 
   return (
@@ -68,22 +54,23 @@ export default function Home() {
           <p className="col-span-full text-sm text-neutral-500 py-8">Loading your courses…</p>
         )}
 
-        {!isLoading && courses.length === 0 && (
+        {isFetched && !userId && (
           <p className="col-span-full text-sm text-neutral-500 py-4">
-            No courses yet. Create one with the card on the left, or{" "}
             <Link href="/signin" className="text-primary font-semibold hover:underline">
-              sign in
+              Sign in
             </Link>{" "}
-            to see courses linked to your account.
+            to see your courses.
+          </p>
+        )}
+
+        {isFetched && userId && courses.length === 0 && (
+          <p className="col-span-full text-sm text-neutral-500 py-4">
+            No courses yet. Create one with the card on the left.
           </p>
         )}
 
         {courses.map((course) => (
-          <CourseCard
-            key={course.id}
-            course={course}
-            onDeleted={(id) => setCourses((prev) => prev.filter((c) => c.id !== id))}
-          />
+          <CourseCard key={course.id} course={course} />
         ))}
       </div>
     </main>

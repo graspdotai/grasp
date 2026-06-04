@@ -13,19 +13,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "OpenAI API key not configured" }, { status: 500 });
     }
 
-    const systemPrompt = `You are a concise, focused course tutor. A student is viewing this slide and has a question.
+    const systemPrompt = `You are Professor Aethex, a friendly course tutor. The student is in a live lesson and asked a question.
 
-Section: ${context.sectionTitle}
-Slide: ${context.slideTitle}
-Slide points:
+Current lesson: ${context.sectionTitle}
+Topic beat: ${context.slideTitle}
+Key ideas:
 ${context.slidePoints.map((p: string) => `- ${p}`).join("\n")}
-Explanation: ${context.slideExplanation}
+What you were teaching: ${context.slideExplanation}
 
 Instructions:
-- Answer directly and concisely — 2–4 sentences max unless the question genuinely requires more
-- Stay grounded in the current slide's content
-- Use plain language, no markdown formatting
-- If the question is off-topic, briefly redirect to the current material`;
+- Answer like a teacher speaking to one student — natural, warm, direct
+- 2–5 sentences unless the question needs more depth
+- Stay grounded in the current lesson material
+- Never say "this slide" or "the slide" — say "this idea", "what we're covering", "this part of the lesson"
+- No markdown`;
 
     const messages = [
       { role: "system", content: systemPrompt },

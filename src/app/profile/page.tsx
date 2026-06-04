@@ -9,39 +9,17 @@ import { ArrowLeftIcon } from "@phosphor-icons/react";
 import Navbar from "@/components/Navbar";
 import { loadOnboardingProfile } from "@/lib/onboardingStorage";
 import { getLocalUserEmail, getLocalUserId } from "@/lib/userSession";
+import { useProfile } from "@/hooks/useProfile";
 import type { OnboardingProfile } from "@/lib/onboarding";
-
-type ProfileRow = {
-  full_name: string | null;
-  email: string | null;
-  avatar_variant: string | null;
-  avatar_url: string | null;
-  learner_types: string[];
-  learning_interests: string[];
-  lesson_language: string | null;
-  lesson_length: string | null;
-  onboarding_completed: boolean;
-};
 
 export default function ProfilePage() {
   const userId = getLocalUserId();
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const { data: profile, isLoading } = useProfile();
   const [onboarding, setOnboarding] = useState<OnboardingProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setOnboarding(loadOnboardingProfile());
-
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
-
-    fetch(`/api/profile?userId=${userId}`)
-      .then((res) => res.json())
-      .then((data) => setProfile(data.profile ?? null))
-      .finally(() => setIsLoading(false));
-  }, [userId]);
+  }, []);
 
   const email = profile?.email ?? getLocalUserEmail() ?? "Not signed in";
   const displayName = resolveDisplayName({
@@ -78,97 +56,105 @@ export default function ProfilePage() {
 
           {!userId && (
             <p className="mt-6 text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-3">
-              <Link href="/signin" className="font-semibold underline">
-                Sign in
-              </Link>{" "}
-              to link courses and progress to your account.
+              Sign in to sync your profile across devices.
             </p>
           )}
 
-          {isLoading ? (
-            <p className="mt-8 text-sm text-neutral-500">Loading profile…</p>
-          ) : (
-            <div className="mt-8 grid gap-6">
-              <section>
-                <h2 className="text-sm font-semibold text-neutral-800 mb-3">
-                  Learning preferences
+          {isLoading && userId && (
+            <p className="mt-6 text-sm text-neutral-500">Loading profile…</p>
+          )}
+
+          {!isLoading && profile && (
+            <div className="mt-8 space-y-6">
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                  Avatar
                 </h2>
-                <dl className="grid gap-3 text-sm">
-                  <div className="flex justify-between gap-4 border-b border-neutral-100 pb-2">
-                    <dt className="text-neutral-500">Language</dt>
-                    <dd className="font-medium text-neutral-800">
-                      {profile?.lesson_language ?? onboarding?.language ?? "—"}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4 border-b border-neutral-100 pb-2">
-                    <dt className="text-neutral-500">Lesson length</dt>
-                    <dd className="font-medium text-neutral-800">
-                      {profile?.lesson_length ?? onboarding?.lessonLength ?? "—"}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-neutral-500">Onboarding</dt>
-                    <dd className="font-medium text-neutral-800">
-                      {profile?.onboarding_completed || onboarding
-                        ? "Completed"
-                        : "Not completed"}
-                    </dd>
-                  </div>
-                </dl>
-              </section>
+                <p className="text-sm text-neutral-700">
+                  {resolveAvatarVariant(profile)}
+                </p>
+              </div>
 
-              <section>
-                <h2 className="text-sm font-semibold text-neutral-800 mb-3">Interests</h2>
-                <div className="flex flex-wrap gap-2">
-                  {(profile?.learning_interests?.length
-                    ? profile.learning_interests
-                    : onboarding?.interests ?? []
-                  ).map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                  {!profile?.learning_interests?.length && !onboarding?.interests?.length && (
-                    <span className="text-sm text-neutral-500">No interests saved yet.</span>
-                  )}
+              {profile.learner_types?.length > 0 && (
+                <div>
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                    Learner type
+                  </h2>
+                  <p className="text-sm text-neutral-700">
+                    {profile.learner_types.join(", ")}
+                  </p>
                 </div>
-              </section>
+              )}
 
-              <section>
-                <h2 className="text-sm font-semibold text-neutral-800 mb-3">Learner type</h2>
-                <div className="flex flex-wrap gap-2">
-                  {(profile?.learner_types?.length
-                    ? profile.learner_types
-                    : onboarding?.personas ?? []
-                  ).map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                    >
-                      {item}
-                    </span>
-                  ))}
+              {profile.learning_interests?.length > 0 && (
+                <div>
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                    Interests
+                  </h2>
+                  <p className="text-sm text-neutral-700">
+                    {profile.learning_interests.join(", ")}
+                  </p>
                 </div>
-              </section>
+              )}
+
+              {profile.lesson_language && (
+                <div>
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                    Lesson language
+                  </h2>
+                  <p className="text-sm text-neutral-700 capitalize">
+                    {profile.lesson_language}
+                  </p>
+                </div>
+              )}
+
+              {profile.lesson_length && (
+                <div>
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
+                    Preferred lesson length
+                  </h2>
+                  <p className="text-sm text-neutral-700 capitalize">
+                    {profile.lesson_length}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          <div className="mt-8 flex flex-wrap gap-4 text-sm">
-            <Link href="/settings" className="font-semibold text-primary hover:underline">
-              Edit name & avatar
-            </Link>
-            <Link href="/onboarding" className="font-semibold text-primary hover:underline">
-              Update onboarding
+          {onboarding && (
+            <div className="mt-8 pt-8 border-t border-neutral-100">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
+                Local onboarding (this device)
+              </h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <dt className="text-neutral-500">Language</dt>
+                  <dd className="font-medium capitalize">{onboarding.language}</dd>
+                </div>
+                <div>
+                  <dt className="text-neutral-500">Lesson length</dt>
+                  <dd className="font-medium capitalize">{onboarding.lessonLength}</dd>
+                </div>
+                <div>
+                  <dt className="text-neutral-500">Learner types</dt>
+                  <dd className="font-medium">{onboarding.personas.join(", ")}</dd>
+                </div>
+                <div>
+                  <dt className="text-neutral-500">Interests</dt>
+                  <dd className="font-medium">{onboarding.interests.join(", ")}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+
+          <div className="mt-8 flex gap-3">
+            <Link
+              href="/settings"
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 transition-colors"
+            >
+              Edit settings
             </Link>
           </div>
-          {profile?.avatar_variant && (
-            <p className="text-xs text-neutral-400 mt-2">
-              Avatar style: {resolveAvatarVariant(profile)}
-            </p>
-          )}
         </div>
       </div>
     </main>

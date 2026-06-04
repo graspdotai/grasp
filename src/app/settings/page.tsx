@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useProfile, useInvalidateProfile } from "@/hooks/useProfile";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, SignOutIcon } from "@phosphor-icons/react";
@@ -15,16 +16,15 @@ import {
 import { deleteAccount, signOut } from "@/lib/auth";
 import { resolveDisplayName } from "@/lib/profileDisplay";
 import { getLocalUserEmail, getLocalUserId } from "@/lib/userSession";
-import type { ProfileRow } from "@/types/database";
-
 export default function SettingsPage() {
   const router = useRouter();
   const userId = getLocalUserId();
   const email = getLocalUserEmail();
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const { data: profile, isLoading } = useProfile();
+  const invalidateProfile = useInvalidateProfile();
   const [fullName, setFullName] = useState("");
   const [avatarVariant, setAvatarVariant] = useState<AvatarVariant>("marble");
-  const [isLoading, setIsLoading] = useState(true);
+  const [formInitialized, setFormInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -33,21 +33,11 @@ export default function SettingsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
-
-    fetch(`/api/profile?userId=${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        const row = data.profile as ProfileRow | null;
-        setProfile(row);
-        setFullName(row?.full_name ?? "");
-        setAvatarVariant(parseAvatarVariant(row?.avatar_variant ?? row?.avatar_url));
-      })
-      .finally(() => setIsLoading(false));
-  }, [userId]);
+    if (!profile || formInitialized) return;
+    setFullName(profile.full_name ?? "");
+    setAvatarVariant(parseAvatarVariant(profile.avatar_variant ?? profile.avatar_url));
+    setFormInitialized(true);
+  }, [profile, formInitialized]);
 
   async function handleSaveProfile(event: React.FormEvent) {
     event.preventDefault();
@@ -72,7 +62,7 @@ export default function SettingsPage() {
         throw new Error(data.error ?? "Failed to save");
       }
 
-      setProfile(data.profile);
+      invalidateProfile();
       setSaveMessage("Saved");
     } catch (err) {
       setSaveMessage(err instanceof Error ? err.message : "Could not save");
