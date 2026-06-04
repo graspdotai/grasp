@@ -15,6 +15,7 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   HeadphonesIcon,
+  ClockIcon,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -396,7 +397,6 @@ export default function CoursePage({
     }
   };
 
-  // Enter Full Screen classroom mode and instantly start reading Slide 1
   const startFullClassroom = async () => {
     setIsPlayingClass(true);
     setActiveSlideIdx(0);
@@ -404,7 +404,6 @@ export default function CoursePage({
     await playSlideAudio(activeSection.slides[0]);
   };
 
-  // Handlers for slide switching (triggers TTS audio dynamically inside Classroom!)
   const handlePrevSlide = () => {
     if (activeSlideIdx > 0) {
       const nextIdx = activeSlideIdx - 1;
@@ -520,11 +519,9 @@ export default function CoursePage({
         </div>
       </div>
 
-      {/* Main Two-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
-        {/* LEFT COLUMN: Sidebar list of sections - FLAT */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-14 mt-8">
         <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="bg-neutral-50 rounded-2xl p-4">
+          <div className="bg-neutral-50 rounded-3xl px-5 py-6">
             <h2 className="text-sm font-semibold text-neutral-500 px-2 mb-3">
               Course Syllabus
             </h2>
@@ -536,10 +533,10 @@ export default function CoursePage({
                   <div
                     key={section.id}
                     onClick={() => selectSection(section.id)}
-                    className={`group w-full flex items-start gap-3 p-4 rounded-xl text-left cursor-pointer transition-all duration-200 ${
+                    className={`group w-full flex items-start gap-3 p-4 rounded-2xl text-left cursor-pointer transition-all duration-200 ${
                       isActive
-                        ? "bg-white border-2 border-primary"
-                        : "bg-transparent border border-transparent hover:bg-neutral-100/70"
+                        ? "bg-primary/5"
+                        : "bg-transparent hover:bg-primary/5"
                     }`}
                   >
                     {/* Circle Checkmark Icon - FLAT */}
@@ -558,20 +555,23 @@ export default function CoursePage({
                       )}
                     </button>
 
-                    {/* Text Details */}
                     <div className="grow">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-semibold text-neutral-500">
-                          MODULE {index + 1}
-                        </span>
-                        <span className="text-[11px] font-medium text-neutral-500">
-                          {section.duration}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <ClockIcon
+                            size={12}
+                            weight="bold"
+                            className="text-neutral-400"
+                          />
+                          <span className="text-xs text-neutral-500">
+                            {section.duration}
+                          </span>
+                        </div>
                       </div>
                       <h3
-                        className={`text-sm font-bold mt-0.5 transition-colors duration-150 ${
+                        className={`text-sm font-semibold mt-0.5 transition-colors duration-150 ${
                           isActive
-                            ? "text-primary font-extrabold"
+                            ? "text-primary font-semibold"
                             : "text-neutral-800 group-hover:text-neutral-900"
                         }`}
                       >
@@ -585,17 +585,11 @@ export default function CoursePage({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Section details and active class player - FLAT */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          {/* SECTION DISPLAY VIEW (Default) */}
           <div className="flex flex-col gap-6">
-            {/* Header and Description Card - FLAT */}
-            <div className="bg-white border border-neutral-100 rounded-2xl p-6 flex flex-col gap-4">
+            <div className="bg-white rounded-2xl flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-primary-100 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                  Active Module
-                </span>
-                <span className="text-xs text-neutral-400 font-medium">
+                <span className="text-xs text-neutral-400">
                   Estimate: {activeSection.duration} lecture •{" "}
                   {activeSection.slides.length} slides
                 </span>
