@@ -25,11 +25,6 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center gap-3">
-        {email && (
-          <span className="hidden sm:block max-w-[190px] truncate text-sm font-medium text-neutral-600">
-            {email}
-          </span>
-        )}
         <Link
           href="/settings"
           className="bg-neutral-50 text-neutral-600 rounded-2xl h-11 w-11 flex items-center justify-center hover:bg-neutral-100 transition-colors"
