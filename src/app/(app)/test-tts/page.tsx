@@ -1,168 +1,85 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AudioEngine } from "@/lib/audio/audioEngine";
 
 export default function TestTTS() {
   const [text, setText] = useState(
     "Hello! Welcome to Grasp AI. This is a live real-time test of our Aethex Text-To-Speech streaming integration.",
   );
   const [language, setLanguage] = useState("english");
-  const [voiceId, setVoiceId] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Real-time streaming state
+  const [warning, setWarning] = useState<string | null>(null);
   const [isStreamingPlaying, setIsStreamingPlaying] = useState(false);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const scheduledTimeRef = useRef<number>(0);
+  const audioEngineRef = useRef<AudioEngine | null>(null);
 
-  // Pre-configured list of popular voices found in your account
-  const sampleVoices = [
-    { id: "", name: "Default Active Voice (Recommended)" },
-    {
-      id: "3aa25417-2c1c-5531-809e-f6d0a0b0e5cc",
-      name: "Amara (English, Neutral)",
-    },
-    {
-      id: "050d7f37-cc8b-551e-b824-ff3955013190",
-      name: "Samuel (English, Male)",
-    },
-    {
-      id: "ced830b2-294e-5ff8-af09-32373a90131f",
-      name: "Jackson (English, Male)",
-    },
-    {
-      id: "db5d1b41-3720-5563-9a2a-233ce7b7c4ba",
-      name: "Amelia (English, Female)",
-    },
-  ];
+  if (!audioEngineRef.current) {
+    audioEngineRef.current = new AudioEngine();
+  }
+
+  useEffect(() => {
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      if (audioEngineRef.current) {
+        void audioEngineRef.current.stop();
+      }
+    };
+  }, [audioUrl]);
+
+  const getErrorMessage = (err: unknown): string =>
+    err instanceof Error ? err.message : "An unexpected error occurred";
 
   const handleSynthesize = async () => {
     setIsLoading(true);
     setError(null);
+    setWarning(null);
     setAudioUrl(null);
     setIsStreamingPlaying(false);
 
-    // Stop any existing stream playback
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close();
-      audioCtxRef.current = null;
+    if (audioEngineRef.current) {
+      await audioEngineRef.current.stop();
     }
 
     try {
-      const response = await fetch("/api/aethex/tts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const result = await audioEngineRef.current!.synthesize(
+        {
           text,
           language,
-          voice_id: undefined,
-          streaming: streaming,
-        }),
-      });
+          streaming,
+        },
+        {
+          onStreamStateChange: setIsStreamingPlaying,
+        },
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        let errorMsg = errorData.error || `Error: ${response.status}`;
-
-        // Friendly fix for the "Voice not linked to an active TTS model" error
-        if (errorMsg.includes("Voice not linked to an active TTS model")) {
-          errorMsg =
-            "Voice not linked to an active TTS model in Aethex. Please use 'Default Active Voice (Recommended)' since this account doesn't have a model bound to that custom voice yet.";
-        }
-        console.log("[LOG] ", errorMsg);
-        console.log("[LOG] ", errorData);
-        throw new Error(errorMsg);
+      if (result.audioUrl) {
+        setAudioUrl(result.audioUrl);
       }
-
-      if (streaming) {
-        // Stream playback using Web Audio API
-        setIsStreamingPlaying(true);
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("Could not read stream from response.");
-
-        // Initialize AudioContext at 24000 Hz (mono) as specified in Aethex Docs
-        const AudioContextClass =
-          window.AudioContext || (window as any).webkitAudioContext;
-        const audioCtx = new AudioContextClass({ sampleRate: 24000 });
-        audioCtxRef.current = audioCtx;
-        scheduledTimeRef.current = audioCtx.currentTime;
-
-        let leftOverBuffer: Uint8Array | null = null;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          // Combine leftover bytes with the new chunk
-          let chunk = value;
-          if (leftOverBuffer) {
-            const combined = new Uint8Array(
-              leftOverBuffer.length + value.length,
-            );
-            combined.set(leftOverBuffer);
-            combined.set(value, leftOverBuffer.length);
-            chunk = combined;
-            leftOverBuffer = null;
-          }
-
-          // Each sample is 2 bytes (PCM16)
-          const numSamples = Math.floor(chunk.length / 2);
-          const remainder = chunk.length % 2;
-
-          if (remainder > 0) {
-            leftOverBuffer = chunk.slice(chunk.length - remainder);
-          }
-
-          if (numSamples === 0) continue;
-
-          // Convert raw PCM16 little-endian bytes to Float32 array
-          const float32Data = new Float32Array(numSamples);
-          const dataView = new DataView(
-            chunk.buffer,
-            chunk.byteOffset,
-            chunk.byteLength,
-          );
-
-          for (let i = 0; i < numSamples; i++) {
-            const int16Sample = dataView.getInt16(i * 2, true); // Little-endian
-            float32Data[i] = int16Sample / 32768.0; // Float conversion (-1.0 to 1.0)
-          }
-
-          // Create an AudioBuffer and schedule it for playback
-          const audioBuffer = audioCtx.createBuffer(1, numSamples, 24000);
-          audioBuffer.getChannelData(0).set(float32Data);
-
-          const source = audioCtx.createBufferSource();
-          source.buffer = audioBuffer;
-          source.connect(audioCtx.destination);
-
-          // Schedule buffer to play immediately after the previous scheduled buffer
-          const startPlayTime = Math.max(
-            scheduledTimeRef.current,
-            audioCtx.currentTime,
-          );
-          source.start(startPlayTime);
-
-          scheduledTimeRef.current = startPlayTime + audioBuffer.duration;
-        }
-
-        setIsStreamingPlaying(false);
-      } else {
-        // Standard full WAV file playback
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
+      if (result.warning) {
+        setWarning(result.warning);
       }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "An unexpected error occurred");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleStop = async () => {
+    try {
+      await audioEngineRef.current?.stop();
+      setIsStreamingPlaying(false);
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     }
   };
 
@@ -176,7 +93,7 @@ export default function TestTTS() {
             Aethex Speech Lab
           </h1>
           <p className="text-slate-400 text-sm">
-            Convert text into high-fidelity speech in real-time.
+            Convert text into speech. Falls back to browser voice if Aethex is unavailable.
           </p>
         </div>
 
@@ -209,10 +126,10 @@ export default function TestTTS() {
 
           <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Voice Model
+              Engine Mode
             </label>
-            <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-3 text-slate-400 text-sm cursor-not-allowed">
-              Default Active Voice
+            <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-3 text-slate-400 text-sm">
+              Aethex primary, browser fallback
             </div>
           </div>
         </div>
@@ -240,45 +157,40 @@ export default function TestTTS() {
           </button>
         </div>
 
-        <button
-          onClick={handleSynthesize}
-          disabled={isLoading || !text}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-blue-500/20 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all duration-200 flex items-center justify-center gap-2"
-        >
-          {isLoading ? (
-            <span className="flex items-center gap-2">
-              <svg
-                className="animate-spin h-5 w-5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              {streaming ? "Streaming speech..." : "Generating Audio..."}
-            </span>
-          ) : streaming ? (
-            "Stream & Play Speech"
-          ) : (
-            "Synthesize Speech"
-          )}
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={handleSynthesize}
+            disabled={isLoading || !text}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-blue-500/20 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all duration-200 flex items-center justify-center gap-2"
+          >
+            {isLoading
+              ? streaming
+                ? "Streaming speech..."
+                : "Generating audio..."
+              : streaming
+                ? "Stream and Play Speech"
+                : "Synthesize Speech"}
+          </button>
+
+          <button
+            onClick={handleStop}
+            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-3 rounded-lg transition-colors"
+          >
+            Stop Playback
+          </button>
+        </div>
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg text-sm leading-relaxed">
             <span className="font-semibold block mb-1">Synthesis Failed</span>
             {error}
+          </div>
+        )}
+
+        {warning && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 p-4 rounded-lg text-sm leading-relaxed">
+            <span className="font-semibold block mb-1">Fallback Active</span>
+            {warning}
           </div>
         )}
 
@@ -299,13 +211,13 @@ export default function TestTTS() {
               />
             </div>
             <span className="text-sm text-blue-400 font-medium">
-              Playing live stream from Aethex model...
+              Playing live stream from audio engine...
             </span>
           </div>
         )}
 
         {audioUrl && (
-          <div className="bg-emerald-500/5 border border-emerald-500/10 p-4 rounded-lg flex flex-col gap-3 animate-fade-in">
+          <div className="bg-emerald-500/5 border border-emerald-500/10 p-4 rounded-lg flex flex-col gap-3">
             <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
               Generated Audio
             </span>

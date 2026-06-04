@@ -7,6 +7,8 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
 import LogoIcon from "@/components/Logo";
 import { saveOnboardingDetails } from "@/lib/auth/client";
+import { saveOnboardingProfile } from "@/lib/onboardingStorage";
+import { getLocalUserId } from "@/lib/userSession";
 
 const STEPS = [
   {
@@ -106,6 +108,14 @@ export default function OnboardingFlow() {
     setErrorMessage("");
 
     if (step === STEPS.length - 1) {
+      const profile = {
+        personas: selections[0] ?? [],
+        interests: selections[1] ?? [],
+        language,
+        lessonLength,
+      };
+      saveOnboardingProfile(profile);
+
       setIsSaving(true);
       const result = await saveOnboardingDetails({
         learnerTypes: selections[0] ?? [],
@@ -123,6 +133,15 @@ export default function OnboardingFlow() {
         }
 
         return;
+      }
+
+      const userId = getLocalUserId();
+      if (userId) {
+        void fetch("/api/profile/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, onboarding: profile }),
+        });
       }
 
       setIsComplete(true);

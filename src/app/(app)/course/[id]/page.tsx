@@ -19,23 +19,13 @@ import {
   ArrowRightIcon,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Interface definitions
-interface Slide {
-  title: string;
-  points: string[];
-  explanationText: string; // The lecture text the AI teacher reads aloud
-}
-
-interface CourseSection {
-  id: string;
-  title: string;
-  duration: string;
-  completed: boolean;
-  description: string;
-  keyPoints: string[];
-  slides: Slide[];
-}
+import {
+  fetchCourse,
+  isUuid,
+  onboardingLanguageToTts,
+  updateModuleProgress,
+  type CourseSection,
+} from "@/lib/courseApi";
 
 // Full Mock Data with multiple slides per section
 const initialSections: CourseSection[] = [
@@ -279,10 +269,28 @@ export default function CoursePage({
 }) {
   const resolvedParams = use(params);
   const courseId = resolvedParams.id;
+  const isLiveCourse = isUuid(courseId);
 
   // State management
-  const [sections, setSections] = useState<CourseSection[]>(initialSections);
-  const [activeSectionId, setActiveSectionId] = useState<string>("sec-3"); // Default to Second Law for demo
+  const [sections, setSections] = useState<CourseSection[]>(
+    isLiveCourse ? [] : initialSections,
+  );
+  const [courseTitle, setCourseTitle] = useState(
+    isLiveCourse ? "Loading course…" : "Thermodynamics 101",
+  );
+  const [courseSummary, setCourseSummary] = useState(
+    isLiveCourse
+      ? ""
+      : "Master the thermodynamic laws, entropy calculations, and pure substance state transitions.",
+  );
+  const [learnerLevelLabel, setLearnerLevelLabel] = useState(
+    isLiveCourse ? "" : "Intermediate",
+  );
+  const [courseLoadError, setCourseLoadError] = useState<string | null>(null);
+  const [isCourseLoading, setIsCourseLoading] = useState(isLiveCourse);
+  const [activeSectionId, setActiveSectionId] = useState<string>(
+    isLiveCourse ? "" : "sec-3",
+  );
 
   // Dynamic active slide index (0-indexed)
   const [activeSlideIdx, setActiveSlideIdx] = useState<number>(0);
@@ -307,17 +315,69 @@ export default function CoursePage({
   const activeSection =
     sections.find((s) => s.id === activeSectionId) || sections[0];
   const activeSlide =
-    activeSection.slides[activeSlideIdx] || activeSection.slides[0];
+    activeSection?.slides[activeSlideIdx] || activeSection?.slides[0];
+
+  useEffect(() => {
+    if (!isLiveCourse) return;
+
+    let cancelled = false;
+
+    async function loadCourse() {
+      setIsCourseLoading(true);
+      setCourseLoadError(null);
+
+      try {
+        const data = await fetchCourse(courseId);
+        if (cancelled) return;
+
+        setSections(data.sections);
+        setCourseTitle(data.course.title);
+        setCourseSummary(data.course.summary || data.course.goal);
+        setLearnerLevelLabel(
+          data.course.learnerLevel.charAt(0).toUpperCase() +
+            data.course.learnerLevel.slice(1),
+        );
+        setActiveSectionId(data.sections[0]?.id ?? "");
+        if (data.course.onboarding?.language) {
+          setLanguage(onboardingLanguageToTts(data.course.onboarding.language));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCourseLoadError(
+            err instanceof Error ? err.message : "Failed to load course",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsCourseLoading(false);
+      }
+    }
+
+    void loadCourse();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, isLiveCourse]);
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, []);
 
   const completedCount = sections.filter((s) => s.completed).length;
-  const progressPercent = Math.round((completedCount / sections.length) * 100);
-  const defaultQuestionThread: TutorMessage[] = [
-    {
-      id: `${activeSectionId}-intro`,
-      role: "assistant",
-      text: `Ask me anything about ${activeSection.title}. I can explain the current slide, give an example, or help you review the key points.`,
-    },
-  ];
+  const progressPercent =
+    sections.length > 0
+      ? Math.round((completedCount / sections.length) * 100)
+      : 0;
+  const defaultQuestionThread: TutorMessage[] = activeSection
+    ? [
+        {
+          id: `${activeSectionId}-intro`,
+          role: "assistant",
+          text: `Ask me anything about ${activeSection.title}. I can explain the current slide, give an example, or help you review the key points.`,
+        },
+      ]
+    : [];
   const activeQuestionThread =
     questionThreads[activeSectionId] || defaultQuestionThread;
   const suggestedQuestions = [
@@ -335,14 +395,28 @@ export default function CoursePage({
     }
   };
 
-  // Toggle completion status of a module
   const toggleSectionCompleted = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Avoid selecting section when clicking checkbox
+    e.stopPropagation();
+    const section = sections.find((s) => s.id === id);
+    if (!section) return;
+
+    const nextCompleted = !section.completed;
+
     setSections((prev) =>
       prev.map((sec) =>
-        sec.id === id ? { ...sec, completed: !sec.completed } : sec,
+        sec.id === id ? { ...sec, completed: nextCompleted } : sec,
       ),
     );
+
+    if (isLiveCourse) {
+      void updateModuleProgress(courseId, id, nextCompleted).catch(() => {
+        setSections((prev) =>
+          prev.map((sec) =>
+            sec.id === id ? { ...sec, completed: !nextCompleted } : sec,
+          ),
+        );
+      });
+    }
   };
 
   const speakAnswer = async (
@@ -612,16 +686,21 @@ export default function CoursePage({
       {/* Course Title and Progress Header - FLAT aesthetic (No shadows) */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-neutral-100">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary mb-1">
-            <span>Intermediate</span>
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            Thermodynamics 101
-          </h1>
-          <p className="text-neutral-500 text-sm mt-1">
-            Master the thermodynamic laws, entropy calculations, and pure
-            substance state transitions.
-          </p>
+          {learnerLevelLabel && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-primary mb-1">
+              <span>{learnerLevelLabel}</span>
+            </div>
+          )}
+          <h1 className="text-3xl font-extrabold tracking-tight">{courseTitle}</h1>
+          {courseSummary && (
+            <p className="text-neutral-500 text-sm mt-1">{courseSummary}</p>
+          )}
+          {courseLoadError && (
+            <p className="text-sm text-red-600 mt-2">{courseLoadError}</p>
+          )}
+          {isCourseLoading && (
+            <p className="text-sm text-neutral-500 mt-2">Loading course…</p>
+          )}
         </div>
 
         {/* Progress Bar Widget - FLAT */}

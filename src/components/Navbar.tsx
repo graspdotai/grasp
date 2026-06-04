@@ -2,6 +2,7 @@
 
 import LogoIcon from "./Logo";
 import Avatar from "boring-avatars";
+import { GearIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -24,15 +25,21 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center gap-3">
-        {/* <button className="bg-neutral-50 text-neutral-600 rounded-2xl h-11 w-11 flex items-center justify-center">
-          <GearIcon size={18} />
-        </button> */}
         {email && (
-          <span className="max-w-[190px] truncate text-sm font-medium text-neutral-600">
+          <span className="hidden sm:block max-w-[190px] truncate text-sm font-medium text-neutral-600">
             {email}
           </span>
         )}
-        <Avatar name={email || "Grasp user"} />
+        <Link
+          href="/settings"
+          className="bg-neutral-50 text-neutral-600 rounded-2xl h-11 w-11 flex items-center justify-center hover:bg-neutral-100 transition-colors"
+          aria-label="Settings"
+        >
+          <GearIcon size={18} />
+        </Link>
+        <Link href="/profile" aria-label="Profile">
+          <Avatar name={email || "Grasp user"} size={44} variant="beam" />
+        </Link>
       </div>
     </nav>
   );

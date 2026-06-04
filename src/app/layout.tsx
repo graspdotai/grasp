@@ -5,6 +5,7 @@ import {
   Google_Sans,
 } from "next/font/google";
 import "./globals.css";
+import AuthProvider from "@/components/AuthProvider";
 
 const googleSans = Google_Sans({
   subsets: ["latin"],
@@ -36,7 +37,7 @@ export default function RootLayout({
       <body
         className={`${googleSans.className} ${bricolageGrotesque.variable} ${dmSerif.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

@@ -79,3 +79,108 @@ body {
 button {
   cursor: pointer;
 }
+
+/* Fluid gradient mesh — inspired by shadcn gradient-animation background */
+.gradient-mesh-bg {
+  background: radial-gradient(circle at 20% 20%, #1e3a8a 0%, transparent 45%),
+    radial-gradient(circle at 80% 10%, #5b21b6 0%, transparent 42%),
+    radial-gradient(circle at 60% 90%, #0e7490 0%, transparent 48%),
+    #020617;
+}
+
+.gradient-cursor-glow {
+  background: conic-gradient(
+    from 0deg,
+    #22d3ee,
+    #60a5fa,
+    #a78bfa,
+    #f472b6,
+    #22d3ee
+  );
+  mix-blend-mode: hard-light;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  mix-blend-mode: hard-light;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.gradient-orb-a {
+  width: min(55vw, 480px);
+  height: min(55vw, 480px);
+  left: -8%;
+  top: 8%;
+  background: #2563eb;
+  animation: gradient-drift-a 14s ease-in-out infinite;
+}
+
+.gradient-orb-b {
+  width: min(48vw, 420px);
+  height: min(48vw, 420px);
+  right: -6%;
+  top: 18%;
+  background: #7c3aed;
+  animation: gradient-drift-b 18s ease-in-out infinite;
+}
+
+.gradient-orb-c {
+  width: min(52vw, 440px);
+  height: min(52vw, 440px);
+  left: 22%;
+  bottom: -12%;
+  background: #0891b2;
+  animation: gradient-drift-c 16s ease-in-out infinite;
+}
+
+.gradient-orb-d {
+  width: min(40vw, 360px);
+  height: min(40vw, 360px);
+  right: 18%;
+  bottom: 6%;
+  background: #ec4899;
+  animation: gradient-drift-d 20s ease-in-out infinite;
+}
+
+@keyframes gradient-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(12%, 18%) scale(1.12) rotate(18deg);
+  }
+}
+
+@keyframes gradient-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(-14%, 10%) scale(1.08) rotate(-22deg);
+  }
+}
+
+@keyframes gradient-drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(8%, -16%) scale(1.15);
+  }
+}
+
+@keyframes gradient-drift-d {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(-10%, -12%) scale(1.1) rotate(30deg);
+  }
+}

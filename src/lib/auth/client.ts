@@ -2,6 +2,19 @@
 
 import { createClient } from "@/lib/supabase/client";
 import type { AuthResponse, OnboardingDetails } from "@/lib/auth/types";
+import { setLocalUserEmail, setLocalUserId } from "@/lib/userSession";
+
+async function persistLocalUser() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user?.id) {
+    setLocalUserId(user.id);
+    if (user.email) setLocalUserEmail(user.email);
+  }
+}
 
 function appUrl(path: string) {
   return `${window.location.origin}${path}`;
@@ -47,6 +60,8 @@ export async function signUpWithEmail(
       };
     }
 
+    await persistLocalUser();
+
     return { ok: true, redirectTo: "/onboarding" };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
@@ -67,6 +82,8 @@ export async function signInWithEmail(
     if (error) {
       return { ok: false, message: error.message };
     }
+
+    await persistLocalUser();
 
     const { data: profile } = await supabase
       .from("profiles")
