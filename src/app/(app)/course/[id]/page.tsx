@@ -19,6 +19,7 @@ import {
   ArrowRightIcon,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
+import SectionReferenceLinks from "@/components/SectionReferenceLinks";
 import {
   fetchCourse,
   isUuid,
@@ -26,6 +27,10 @@ import {
   updateModuleProgress,
   type CourseSection,
 } from "@/lib/courseApi";
+import {
+  sourcesForSection,
+  type CourseSourceLink,
+} from "@/lib/sectionSources";
 
 // Full Mock Data with multiple slides per section
 const initialSections: CourseSection[] = [
@@ -308,6 +313,20 @@ export default function CoursePage({
   const [questionThreads, setQuestionThreads] = useState<
     Record<string, TutorMessage[]>
   >({});
+  const [courseSources, setCourseSources] = useState<CourseSourceLink[]>(
+    isLiveCourse
+      ? []
+      : [
+          {
+            title: "NASA — Thermodynamics fundamentals",
+            url: "https://www.grc.nasa.gov/www/k-12/airplane/thermo.html",
+          },
+          {
+            title: "HyperPhysics — Heat and temperature",
+            url: "http://hyperphysics.phy-astr.gsu.edu/hbase/thermo.html",
+          },
+        ],
+  );
 
   // Audio player reference (lecture)
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -331,6 +350,7 @@ export default function CoursePage({
         if (cancelled) return;
 
         setSections(data.sections);
+        setCourseSources(data.sources ?? []);
         setCourseTitle(data.course.title);
         setCourseSummary(data.course.summary || data.course.goal);
         setLearnerLevelLabel(
@@ -668,6 +688,9 @@ export default function CoursePage({
 
   const isAudioPlaying = audioRef.current ? !audioRef.current.paused : false;
   const isCourseReady = Boolean(activeSection && activeSlide);
+  const sectionSources = activeSection
+    ? sourcesForSection(activeSection.title, courseSources)
+    : [];
 
   if (isLiveCourse && !isCourseReady) {
     return (
@@ -870,6 +893,8 @@ export default function CoursePage({
                   ))}
                 </ul>
               </div>
+
+              <SectionReferenceLinks sources={sectionSources} />
             </div>
 
             <div className="z-10 pr-3 pl-6 flex items-center justify-between flex-wrap gap-4 bg-neutral-50 rounded-t-3xl mt-12 py-3">
