@@ -2,10 +2,26 @@ import pg from "pg";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { config } from "dotenv";
 
-config({ path: ".env.local" });
-config();
+function loadEnvFile(filePath) {
+  if (fs.existsSync(filePath)) {
+    const content = fs.readFileSync(filePath, "utf8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith("#")) {
+        const parts = trimmed.split("=");
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          const value = parts.slice(1).join("=").trim().replace(/^['"]|['"]$/g, '');
+          process.env[key] = value;
+        }
+      }
+    }
+  }
+}
+
+loadEnvFile(".env.local");
+loadEnvFile(".env");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const migrationsDir = path.join(__dirname, "../supabase/migrations");

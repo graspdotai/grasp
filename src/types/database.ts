@@ -221,6 +221,7 @@ export type Database = {
       }
       session_slides: {
         Row: {
+          audio_url: string | null
           created_at: string
           explanation_text: string
           id: number
@@ -229,6 +230,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          audio_url?: string | null
           created_at?: string
           explanation_text: string
           id?: never
@@ -237,6 +239,7 @@ export type Database = {
           title: string
         }
         Update: {
+          audio_url?: string | null
           created_at?: string
           explanation_text?: string
           id?: never

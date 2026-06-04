@@ -4,6 +4,7 @@ export interface Slide {
   title: string;
   points: string[];
   explanationText: string;
+  audioUrl?: string | null;
 }
 
 export interface CourseSection {

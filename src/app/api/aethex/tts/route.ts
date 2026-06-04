@@ -29,6 +29,21 @@ export async function POST(req: NextRequest) {
       }),
     });
 
+    const headersObj: Record<string, string> = {};
+    aethexResponse.headers.forEach((val, key) => {
+      headersObj[key] = val;
+    });
+    const timestamp = new Date().toISOString();
+    const endpoint = `${BASE_URL}/tts`;
+    const xRequestId = aethexResponse.headers.get("x-request-id") || aethexResponse.headers.get("x-correlation-id") || "Not Found";
+
+    console.log("\n================ AETHEX REQUEST LOG ================");
+    console.log(`Timestamp:    ${timestamp}`);
+    console.log(`Endpoint:     POST ${endpoint}`);
+    console.log(`X-Request-ID: ${xRequestId}`);
+    console.log(`All Headers:  ${JSON.stringify(headersObj, null, 2)}`);
+    console.log("====================================================\n");
+
     if (!aethexResponse.ok) {
       const errorText = await aethexResponse.text();
       return NextResponse.json(

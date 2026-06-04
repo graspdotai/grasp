@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRightIcon, TrashIcon } from "@phosphor-icons/react";
 import CourseThumbnail from "@/components/CourseThumbnail";
@@ -17,6 +17,11 @@ export default function CourseCard({ course }: CourseCardProps) {
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   async function handleDelete(event: React.MouseEvent) {
     event.preventDefault();
@@ -72,11 +77,11 @@ export default function CourseCard({ course }: CourseCardProps) {
 
         <p className="text-xs font-medium text-neutral-400 mt-2">
           Created{" "}
-          {new Date(course.createdAt).toLocaleDateString(undefined, {
+          {mounted ? new Date(course.createdAt).toLocaleDateString(undefined, {
             month: "short",
             day: "numeric",
             year: "numeric",
-          })}
+          }) : ""}
         </p>
       </Link>
 

@@ -5,17 +5,14 @@ import { getOpenAiApiKey } from "@/server/env";
 import { HttpError } from "@/server/errors";
 
 const moduleSlidesSchema = z.object({
-  keyPoints: z.array(z.string().min(3)).min(5).max(10),
-  slides: z
-    .array(
-      z.object({
-        title: z.string().min(3),
-        points: z.array(z.string().min(3)).min(3).max(6),
-        explanationText: z.string().min(120),
-      })
-    )
-    .min(6)
-    .max(10),
+  keyPoints: z.array(z.string()),
+  slides: z.array(
+    z.object({
+      title: z.string().min(1),
+      points: z.array(z.string()),
+      explanationText: z.string().min(10),
+    })
+  ),
 });
 
 export type ModuleContent = z.infer<typeof moduleSlidesSchema> & {
@@ -34,8 +31,16 @@ export async function generateModuleContent(input: {
 }): Promise<ModuleContent> {
   const apiKey = getOpenAiApiKey();
   if (!apiKey) {
-    throw new HttpError(500, "OPENAI_NOT_CONFIGURED", "OpenAI is not configured. Set OPENAI_API_KEY.");
+    const errMsg = "OpenAI is not configured. Set OPENAI_API_KEY.";
+    console.error("[OpenaiService] [generateModuleContent] Error: " + errMsg);
+    throw new HttpError(500, "OPENAI_NOT_CONFIGURED", errMsg);
   }
+
+  console.log("[OpenaiService] [generateModuleContent] Start generating content", { 
+    topic: input.topic, 
+    moduleTitle: input.moduleTitle,
+    learnerLevel: input.learnerLevel
+  });
 
   const sourcesBlock =
     input.sourceHighlights.length > 0
@@ -112,8 +117,11 @@ Content rules:
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error("[OpenaiService] [generateModuleContent] OpenAI request failed", { status: response.status, errorText });
     throw new HttpError(502, "OPENAI_REQUEST_FAILED", `OpenAI request failed: ${errorText}`);
   }
+
+  console.log("[OpenaiService] [generateModuleContent] OpenAI request succeeded");
 
   const data = (await response.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
@@ -133,14 +141,20 @@ Content rules:
 
   const validated = moduleSlidesSchema.safeParse(parsed);
   if (!validated.success) {
+    console.error("OpenAI module schema mismatch details:", validated.error.format());
     throw new HttpError(
       502,
       "OPENAI_SCHEMA_MISMATCH",
-      "OpenAI response did not match the expected module schema."
+      `OpenAI response did not match the expected module schema: ${validated.error.message}`
     );
   }
 
   const duration = estimateDurationFromSlides(validated.data.slides);
+
+  console.log("[OpenaiService] [generateModuleContent] Content parsed and validated successfully", { 
+    moduleTitle: input.moduleTitle, 
+    duration 
+  });
 
   return {
     ...validated.data,
@@ -150,27 +164,21 @@ Content rules:
 
 const lessonPackSchema = z.object({
   summary: z.string(),
-  learningObjectives: z.array(z.string()).min(3).max(8),
-  lessonOutline: z
-    .array(
-      z.object({
-        title: z.string().min(3),
-        description: z.string().min(10),
-      })
-    )
-    .min(3)
-    .max(8),
-  quizQuestions: z.array(z.string()).min(3).max(6),
-  sources: z
-    .array(
-      z.object({
-        title: z.string().min(3),
-        url: z.string(),
-        highlights: z.array(z.string().min(10)).min(2).max(4),
-      })
-    )
-    .min(2)
-    .max(5),
+  learningObjectives: z.array(z.string()).min(1),
+  lessonOutline: z.array(
+    z.object({
+      title: z.string().min(1),
+      description: z.string(),
+    })
+  ).min(1),
+  quizQuestions: z.array(z.string()),
+  sources: z.array(
+    z.object({
+      title: z.string().min(1),
+      url: z.string(),
+      highlights: z.array(z.string()),
+    })
+  ),
 });
 
 export async function generateLessonPack(input: {
@@ -185,8 +193,15 @@ export async function generateLessonPack(input: {
 }) {
   const apiKey = getOpenAiApiKey();
   if (!apiKey) {
-    throw new HttpError(500, "OPENAI_NOT_CONFIGURED", "OpenAI is not configured. Set OPENAI_API_KEY.");
+    const errMsg = "OpenAI is not configured. Set OPENAI_API_KEY.";
+    console.error("[OpenaiService] [generateLessonPack] Error: " + errMsg);
+    throw new HttpError(500, "OPENAI_NOT_CONFIGURED", errMsg);
   }
+
+  console.log("[OpenaiService] [generateLessonPack] Start generating lesson pack", { 
+    topic: input.topic, 
+    learnerLevel: input.learnerLevel 
+  });
 
   const onboardingBlock = input.onboarding
     ? `\nLearner profile:\n${formatOnboardingForPrompt(input.onboarding)}\n`
@@ -243,8 +258,11 @@ Please design a tailored lesson pack and research sources matching this profile.
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error("[OpenaiService] [generateLessonPack] OpenAI request failed", { status: response.status, errorText });
     throw new HttpError(502, "OPENAI_REQUEST_FAILED", `OpenAI request failed: ${errorText}`);
   }
+
+  console.log("[OpenaiService] [generateLessonPack] OpenAI request succeeded");
 
   const data = (await response.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
@@ -264,12 +282,19 @@ Please design a tailored lesson pack and research sources matching this profile.
 
   const validated = lessonPackSchema.safeParse(parsed);
   if (!validated.success) {
+    console.error("OpenAI lesson pack schema mismatch details:", validated.error.format());
     throw new HttpError(
       502,
       "OPENAI_SCHEMA_MISMATCH",
-      "OpenAI response did not match the expected lesson pack schema."
+      `OpenAI response did not match the expected lesson pack schema: ${validated.error.message}`
     );
   }
+
+  console.log("[OpenaiService] [generateLessonPack] Pack parsed and validated successfully", {
+    topic: input.topic,
+    summary: validated.data.summary,
+    modulesCount: validated.data.lessonOutline.length
+  });
 
   return {
     query: `openai-search: ${input.topic}`,

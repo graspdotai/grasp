@@ -24,12 +24,13 @@ interface Props {
   isOpen: boolean;
   onToggle: () => void;
   sectionTitle: string;
-  messages: TutorMessage[];
   isAnswering: boolean;
-  suggestedQuestions: string[];
   onSubmitQuestion: (question: string) => void;
   draft: string;
   onDraftChange: (value: string) => void;
+  onRecordingStateChange?: (isRecording: boolean) => void;
+  onTutorAudioPlayStateChange?: (isPlaying: boolean) => void;
+  tutorMessage?: TutorMessage;
 }
 
 type SpeechRecognitionInstance = {
@@ -93,10 +94,13 @@ function VoiceBars({ active }: { active: boolean }) {
   );
 }
 
-function AudioReply({ message }: { message: TutorMessage }) {
+function AudioReply({ message, onPlayStateChange }: { message: TutorMessage, onPlayStateChange?: (playing: boolean) => void }) {
   const [playing, setPlaying] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    onPlayStateChange?.(playing);
+  }, [playing, onPlayStateChange]);
 
   useEffect(() => {
     if (!message.audioUrl) return;
@@ -131,7 +135,7 @@ function AudioReply({ message }: { message: TutorMessage }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2 }}
-        className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-5"
+        className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-5 mt-4"
       >
         <div className="flex items-center justify-center">
           <VoiceBars active />
@@ -141,52 +145,26 @@ function AudioReply({ message }: { message: TutorMessage }) {
   }
 
   if (!message.audioUrl) {
-    return (
-      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
-        <p className="text-sm leading-relaxed text-neutral-300">{message.text}</p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
+    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 mt-4">
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={togglePlay}
           aria-label={playing ? "Pause spoken answer" : "Play spoken answer"}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors duration-150 ease-out hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors duration-150 ease-out hover:bg-primary-600"
         >
           {playing ? <PauseIcon size={17} weight="fill" /> : <PlayIcon size={17} weight="fill" />}
         </button>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-white">Tutor answered out loud</p>
-          <p className="truncate text-xs text-neutral-500">Replay or read the transcript</p>
+          <p className="text-sm font-semibold text-neutral-900">Tutor answered out loud</p>
+          <p className="truncate text-xs text-neutral-500">Audio response</p>
         </div>
         <VoiceBars active={playing} />
       </div>
-
-      <button
-        type="button"
-        onClick={() => setShowTranscript((value) => !value)}
-        className="mt-3 min-h-10 rounded-full px-3 text-xs font-semibold text-neutral-400 transition-colors duration-150 ease-out hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
-      >
-        {showTranscript ? "Hide transcript" : "Show transcript"}
-      </button>
-
-      <AnimatePresence initial={false}>
-        {showTranscript && (
-          <motion.p
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="pt-1 text-sm leading-relaxed text-neutral-300"
-          >
-            {message.text}
-          </motion.p>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -195,29 +173,31 @@ export default function CourseTutorPanel({
   isOpen,
   onToggle,
   sectionTitle,
-  messages,
   isAnswering,
-  suggestedQuestions,
   onSubmitQuestion,
   draft,
   onDraftChange,
+  onRecordingStateChange,
+  onTutorAudioPlayStateChange,
+  tutorMessage,
 }: Props) {
   const shouldReduceMotion = useReducedMotion();
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const draftRef = useRef(draft);
+  const isAnsweringRef = useRef(isAnswering);
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [interimTranscript, setInterimTranscript] = useState("");
 
-  const latestStudentMessage = useMemo(
-    () => [...messages].reverse().find((message) => message.role === "student"),
-    [messages],
-  );
-  const latestAssistantMessage = useMemo(
-    () => [...messages].reverse().find((message) => message.role === "assistant"),
-    [messages],
-  );
+  useEffect(() => {
+    isAnsweringRef.current = isAnswering;
+  }, [isAnswering]);
+
+  useEffect(() => {
+    onRecordingStateChange?.(isRecording);
+  }, [isRecording, onRecordingStateChange]);
 
   const transcript = `${draft}${interimTranscript ? ` ${interimTranscript}` : ""}`.trim();
   const canAsk = Boolean(draft.trim()) && !isAnswering;
@@ -270,11 +250,26 @@ export default function CourseTutorPanel({
         onDraftChange(`${draftRef.current} ${finalText}`.trim());
       }
       setInterimTranscript(interimText.trim());
+
+      // Silence detection logic
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        if (!isAnsweringRef.current) {
+          recognitionRef.current?.stop();
+          setInterimTranscript("");
+          // Note: using draftRef because draft might be stale
+          const finalDraft = `${draftRef.current} ${finalText}`.trim();
+          if (finalDraft) {
+            onSubmitQuestion(finalDraft);
+          }
+        }
+      }, 2000);
     };
 
     recognitionRef.current = recognition;
 
     return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       recognition.abort();
       recognitionRef.current = null;
     };
@@ -341,37 +336,37 @@ export default function CourseTutorPanel({
               }
               transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: "easeOut" }}
               aria-label="Voice question recorder"
-              className="w-full overflow-hidden rounded-3xl border border-white/[0.08] bg-neutral-950/95 text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
+              className="w-full overflow-hidden rounded-3xl border border-neutral-200 bg-white text-neutral-900 shadow-2xl shadow-black/10 backdrop-blur-xl"
             >
-              <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
+              <div className="flex items-center gap-3 border-b border-neutral-100 px-4 py-3">
                 <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10">
                   <span className="block origin-center scale-[0.38]">
                     <LogoIcon />
                   </span>
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-white">Ask by voice</p>
+                  <p className="text-sm font-semibold text-neutral-900">Ask by voice</p>
                   <p className="truncate text-xs text-neutral-500">{sectionTitle}</p>
                 </div>
                 <button
                   type="button"
                   onClick={onToggle}
                   aria-label="Close voice questions"
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 transition-colors duration-150 ease-out hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 transition-colors duration-150 ease-out hover:bg-neutral-100 hover:text-neutral-700"
                 >
                   <XIcon size={17} weight="bold" />
                 </button>
               </div>
 
               <div className="space-y-4 px-4 py-4">
-                <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] px-4 py-5 text-center">
+                <div className="rounded-3xl border border-neutral-100 bg-neutral-50 px-4 py-5 text-center">
                   <button
                     type="button"
                     onClick={toggleRecording}
                     disabled={isAnswering}
                     aria-pressed={isRecording}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
-                    className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 transition-transform duration-150 ease-out hover:scale-[1.03] hover:bg-primary-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 motion-reduce:transition-none motion-reduce:hover:scale-100"
+                    className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 transition-transform duration-150 ease-out hover:scale-[1.03] hover:bg-primary-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:scale-100"
                   >
                     {isRecording ? (
                       <StopIcon size={28} weight="fill" />
@@ -382,7 +377,7 @@ export default function CourseTutorPanel({
 
                   <div className="mt-4">
                     <VoiceBars active={isRecording || isAnswering} />
-                    <p className="mt-2 text-sm font-medium text-neutral-200">
+                    <p className="mt-2 text-sm font-medium text-neutral-600">
                       {isRecording
                         ? "Listening..."
                         : isAnswering
@@ -392,57 +387,24 @@ export default function CourseTutorPanel({
                   </div>
                 </div>
 
-                <div className="min-h-20 rounded-2xl border border-white/[0.08] bg-neutral-900/80 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-neutral-600">
+                <div className="min-h-20 rounded-2xl border border-neutral-100 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
                     Heard
                   </p>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-300">
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-700">
                     {transcript || "Your question will appear here while you speak."}
                   </p>
                 </div>
 
                 {speechError && (
-                  <p className="rounded-2xl border border-danger-500/20 bg-danger-500/10 px-4 py-3 text-sm text-danger-100">
+                  <p className="rounded-2xl border border-danger-500/20 bg-danger-500/10 px-4 py-3 text-sm text-danger-600">
                     {speechError}
                   </p>
                 )}
 
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {suggestedQuestions.map((question) => (
-                    <button
-                      type="button"
-                      key={question}
-                      onClick={() => askSuggestion(question)}
-                      disabled={isAnswering}
-                      className="min-h-10 flex-shrink-0 rounded-full border border-white/[0.08] px-3 text-xs font-semibold text-neutral-400 transition-colors duration-150 ease-out hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
-                    >
-                      {question}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={submitVoiceQuestion}
-                  disabled={!canAsk}
-                  aria-busy={isAnswering}
-                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-neutral-950 transition-colors duration-150 ease-out hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
-                >
-                  <SparkleIcon size={16} weight="fill" />
-                  Ask Grasp
-                </button>
-
-                {latestStudentMessage && (
-                  <div className="space-y-3 border-t border-white/[0.06] pt-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-neutral-600">
-                        Last question
-                      </p>
-                      <p className="mt-1 text-sm leading-relaxed text-neutral-300">
-                        {latestStudentMessage.text}
-                      </p>
-                    </div>
-                    {latestAssistantMessage && <AudioReply message={latestAssistantMessage} />}
+                {tutorMessage && (tutorMessage.audioLoading || tutorMessage.audioUrl) && (
+                  <div className="pt-2">
+                    <AudioReply message={tutorMessage} onPlayStateChange={onTutorAudioPlayStateChange} />
                   </div>
                 )}
               </div>
@@ -459,8 +421,8 @@ export default function CourseTutorPanel({
           transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: [0.4, 0, 0.2, 1] }}
           className={`flex h-14 items-center justify-center overflow-hidden rounded-full shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 ${
             isOpen
-              ? "w-14 bg-neutral-800 text-white shadow-black/30 hover:bg-neutral-700"
-              : "border border-white/[0.08] bg-neutral-950 pl-2 pr-5 text-white shadow-black/50 hover:border-white/[0.15] hover:bg-neutral-900 active:scale-[0.97]"
+              ? "w-14 bg-neutral-100 text-neutral-800 shadow-black/10 hover:bg-neutral-200"
+              : "border border-neutral-200 bg-white pl-2 pr-5 text-neutral-900 shadow-black/10 hover:border-neutral-300 hover:bg-neutral-50 active:scale-[0.97]"
           }`}
         >
           <AnimatePresence mode="wait" initial={false}>

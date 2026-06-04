@@ -241,11 +241,13 @@ const drawFns = {
 interface CourseThumbnailProps {
   title: string;
   progress?: number; // 0–100
+  hideContent?: boolean;
 }
 
 export default function CourseThumbnail({
   title,
   progress = 0,
+  hideContent = false,
 }: CourseThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -278,31 +280,35 @@ export default function CourseThumbnail({
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
       {/* Progress pill */}
-      <div className="absolute top-3 left-3 z-20">
-        {progress === 0 ? (
-          <span className="text-[10px] font-semibold tracking-wide text-white/50 bg-white/10 rounded-full px-2.5 py-1">
-            Not started
-          </span>
-        ) : (
-          <span
-            className="text-[10px] rounded-full px-2.5 py-1"
-            style={{
-              color: palette[3],
-              background: palette[1] + "44",
-            }}
-          >
-            {progress}% complete
-          </span>
-        )}
-      </div>
+      {!hideContent && (
+        <div className="absolute top-3 left-3 z-20">
+          {progress === 0 ? (
+            <span className="text-[10px] font-semibold tracking-wide text-white/50 bg-white/10 rounded-full px-2.5 py-1">
+              Not started
+            </span>
+          ) : (
+            <span
+              className="text-[10px] rounded-full px-2.5 py-1"
+              style={{
+                color: palette[3],
+                background: palette[1] + "44",
+              }}
+            >
+              {progress}% complete
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Course title */}
-      <p className="absolute bottom-4 left-4 z-20 font-serif text-white/80 backdrop-blur-xl text-2xl leading-tight m-0 drop-shadow-md max-w-[75%]">
-        {title}
-      </p>
+      {!hideContent && (
+        <p className="absolute bottom-4 left-4 z-20 font-serif text-white/80 backdrop-blur-xl text-2xl leading-tight m-0 drop-shadow-md max-w-[75%]">
+          {title}
+        </p>
+      )}
 
       {/* Progress bar */}
-      {progress > 0 && (
+      {!hideContent && progress > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-0.75 bg-white/10 z-20">
           <div
             className="h-full transition-all duration-500"

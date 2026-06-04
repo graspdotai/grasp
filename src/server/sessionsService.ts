@@ -9,6 +9,9 @@ import { HttpError } from "@/server/errors";
 import { generateModuleContent, generateLessonPack, type ModuleContent } from "@/server/openaiService";
 import { upsertProfileFromOnboarding } from "@/server/profilesService";
 import { getSupabaseAdminClient } from "@/server/supabase";
+import { generateAethexTts } from "@/server/aethexService";
+import { uploadAudioToCloudinary } from "@/server/cloudinaryService";
+import { onboardingLanguageToTts } from "@/lib/courseApi";
 
 const searchTypeSchema = z.enum([
   "auto",
@@ -63,6 +66,7 @@ type SlideRow = {
   position: number;
   title: string;
   explanation_text: string;
+  audio_url?: string | null;
 };
 type SlidePointRow = { slide_id: number; position: number; text: string };
 
@@ -77,7 +81,8 @@ function defaultModuleDuration(onboarding?: z.infer<typeof onboardingProfileSche
 async function persistModuleContent(
   moduleId: number,
   content: ModuleContent,
-  nowIso: string
+  nowIso: string,
+  language: string = "english"
 ): Promise<void> {
   const supabase = getSupabaseAdminClient();
 
@@ -87,8 +92,11 @@ async function persistModuleContent(
     .eq("id", moduleId);
 
   if (moduleUpdateError) {
+    console.error("[SessionsService] [persistModuleContent] Module update failed", { moduleId, error: moduleUpdateError.message });
     throw new HttpError(500, "MODULE_UPDATE_FAILED", moduleUpdateError.message);
   }
+
+  console.log("[SessionsService] [persistModuleContent] Updated module duration", { moduleId, duration: content.duration });
 
   const keyPointRows = content.keyPoints.map((text, index) => ({
     module_id: moduleId,
@@ -103,6 +111,24 @@ async function persistModuleContent(
   }
 
   for (const [slideIndex, slide] of content.slides.entries()) {
+    let audioUrl: string | null = null;
+    try {
+      if (slide.explanationText) {
+        console.log(`[SessionsService] [persistModuleContent] Pregenerating Aethex TTS audio for slide`, {
+          title: slide.title,
+          language
+        });
+        const audioBuffer = await generateAethexTts(slide.explanationText, language);
+        audioUrl = await uploadAudioToCloudinary(audioBuffer);
+        console.log(`[SessionsService] [persistModuleContent] Cloudinary audio uploaded`, { audioUrl });
+      }
+    } catch (audioErr) {
+      console.error(`[SessionsService] [persistModuleContent] Failed to pregenerate audio for slide`, {
+        title: slide.title,
+        error: audioErr
+      });
+    }
+
     const { data: slideRow, error: slideError } = await supabase
       .from("session_slides")
       .insert({
@@ -110,6 +136,7 @@ async function persistModuleContent(
         position: slideIndex + 1,
         title: slide.title,
         explanation_text: slide.explanationText,
+        audio_url: audioUrl,
         created_at: nowIso,
       })
       .select("id")
@@ -176,6 +203,7 @@ function buildCourseSections(
         title: slide.title,
         points: pointsBySlide.get(slide.id) ?? [],
         explanationText: slide.explanation_text,
+        audioUrl: slide.audio_url || null,
       })),
     };
   });
@@ -189,6 +217,11 @@ function parseOnboardingFromRaw(raw: unknown): z.infer<typeof onboardingProfileS
 
 export async function createLearningSession(payload: unknown) {
   const input = createSessionSchema.parse(payload);
+  console.log("[SessionsService] [createLearningSession] Start session creation", { 
+    topic: input.topic, 
+    learnerLevel: input.learnerLevel,
+    type: input.type
+  });
   const supabase = getSupabaseAdminClient();
   const nowIso = new Date().toISOString();
   const moduleDurationDefault = defaultModuleDuration(input.onboarding);
@@ -196,20 +229,24 @@ export async function createLearningSession(payload: unknown) {
   if (input.userId && input.onboarding) {
     try {
       await upsertProfileFromOnboarding(input.userId, input.onboarding);
+      console.log("[SessionsService] [createLearningSession] Profile upserted for user", { userId: input.userId });
     } catch (profileError) {
-      console.warn("Profile upsert skipped:", profileError);
+      console.warn("[SessionsService] [createLearningSession] Profile upsert skipped:", profileError);
     }
   }
 
   const lessonPack = await generateLessonPack(input);
   const parsedContent = lessonPackContentSchema.safeParse(lessonPack.content);
   if (!parsedContent.success) {
+    console.error("[SessionsService] [createLearningSession] Lesson pack parsing failed", parsedContent.error.format());
     throw new HttpError(
       502,
       "LESSON_PACK_INVALID",
       "Exa returned an invalid lesson pack. Try again with a narrower topic."
     );
   }
+  
+  console.log("[SessionsService] [createLearningSession] Generated lesson pack successfully");
 
   const sourceHighlights = flattenHighlights(lessonPack.sourceResults);
 
@@ -239,8 +276,11 @@ export async function createLearningSession(payload: unknown) {
     .single();
 
   if (sessionError || !sessionRow) {
+    console.error("[SessionsService] [createLearningSession] Failed to insert session", { error: sessionError });
     throw new HttpError(500, "SESSION_CREATE_FAILED", sessionError?.message ?? "Unknown error");
   }
+
+  console.log("[SessionsService] [createLearningSession] Created session row", { sessionId: sessionRow.id });
 
   const sourceRows = lessonPack.sourceResults.map((source) => ({
     session_id: sessionRow.id,
@@ -286,7 +326,11 @@ export async function createLearningSession(payload: unknown) {
         onboarding: input.onboarding,
       });
 
-      await persistModuleContent(moduleRow.id, moduleContent, nowIso);
+      const lang = input.onboarding?.language
+        ? onboardingLanguageToTts(input.onboarding.language)
+        : "english";
+      await persistModuleContent(moduleRow.id, moduleContent, nowIso, lang);
+      console.log("[SessionsService] [createLearningSession] Module processing complete", { moduleId: moduleRow.id });
     }
 
     await supabase
@@ -294,8 +338,10 @@ export async function createLearningSession(payload: unknown) {
       .update({ status: "ready", updated_at: new Date().toISOString() })
       .eq("id", sessionRow.id);
 
+    console.log("[SessionsService] [createLearningSession] Session marked as ready", { sessionId: sessionRow.id });
     sessionRow.status = "ready";
   } catch (error) {
+    console.error("[SessionsService] [createLearningSession] Error processing modules", { sessionId: sessionRow.id, error });
     await supabase
       .from("learning_sessions")
       .update({ status: "failed", updated_at: new Date().toISOString() })
@@ -352,7 +398,7 @@ export async function getFullCourseBySessionId(sessionIdValue: string) {
 
     const { data: slideRows, error: slidesError } = await supabase
       .from("session_slides")
-      .select("id, module_id, position, title, explanation_text")
+      .select("id, module_id, position, title, explanation_text, audio_url")
       .in("module_id", moduleIds)
       .order("position", { ascending: true });
 
