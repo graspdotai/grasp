@@ -3,6 +3,7 @@
 import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import CourseTutorPanel, { TutorMessage } from "@/components/CourseTutorPanel";
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -36,6 +37,7 @@ interface CourseSection {
   keyPoints: string[];
   slides: Slide[];
 }
+
 
 // Full Mock Data with multiple slides per section
 const initialSections: CourseSection[] = [
@@ -293,9 +295,19 @@ export default function CoursePage({
   const [isTTSLoading, setIsTTSLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [ttsFallback, setTtsFallback] = useState<boolean>(false);
+  const [isQuestionPanelOpen, setIsQuestionPanelOpen] =
+    useState<boolean>(true);
+  const [questionDraft, setQuestionDraft] = useState<string>("");
+  const [isAnsweringQuestion, setIsAnsweringQuestion] =
+    useState<boolean>(false);
+  const [questionThreads, setQuestionThreads] = useState<
+    Record<string, TutorMessage[]>
+  >({});
 
   // Audio player references
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Separate ref for spoken tutor answers so they don't clash with lecture audio
+  const answerAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const activeSection =
     sections.find((s) => s.id === activeSectionId) || sections[0];
@@ -304,6 +316,20 @@ export default function CoursePage({
 
   const completedCount = sections.filter((s) => s.completed).length;
   const progressPercent = Math.round((completedCount / sections.length) * 100);
+  const defaultQuestionThread: TutorMessage[] = [
+    {
+      id: `${activeSectionId}-intro`,
+      role: "assistant",
+      text: `Ask me anything about ${activeSection.title}. I can explain the current slide, give an example, or help you review the key points.`,
+    },
+  ];
+  const activeQuestionThread =
+    questionThreads[activeSectionId] || defaultQuestionThread;
+  const suggestedQuestions = [
+    "Explain this slide simply",
+    "Give me an example",
+    "What should I remember?",
+  ];
 
   // When changing active sections, reset slide index
   const selectSection = (id: string) => {
@@ -322,6 +348,100 @@ export default function CoursePage({
         sec.id === id ? { ...sec, completed: !sec.completed } : sec,
       ),
     );
+  };
+
+  const speakAnswer = async (text: string) => {
+    if (answerAudioRef.current) {
+      answerAudioRef.current.pause();
+      answerAudioRef.current = null;
+    }
+    try {
+      const res = await fetch("/api/aethex/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, language, streaming: false }),
+      });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      answerAudioRef.current = audio;
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.play().catch(() => {});
+    } catch {}
+  };
+
+  const submitQuestion = async (question: string) => {
+    const trimmedQuestion = question.trim();
+
+    if (!trimmedQuestion || isAnsweringQuestion) {
+      return;
+    }
+
+    const sectionId = activeSectionId;
+    const currentThread = questionThreads[sectionId] || defaultQuestionThread;
+
+    const studentMessage: TutorMessage = {
+      id: `question-${Date.now()}`,
+      role: "student",
+      text: trimmedQuestion,
+    };
+
+    setQuestionDraft("");
+    setQuestionThreads((prev) => ({
+      ...prev,
+      [sectionId]: [...currentThread, studentMessage],
+    }));
+    setIsAnsweringQuestion(true);
+
+    try {
+      const res = await fetch("/api/course/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: trimmedQuestion,
+          history: currentThread.filter((m) => m.id !== `${sectionId}-intro`),
+          context: {
+            sectionTitle: activeSection.title,
+            slideTitle: activeSlide.title,
+            slidePoints: activeSlide.points,
+            slideExplanation: activeSlide.explanationText,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      const answerText = res.ok ? data.answer : "Something went wrong. Please try again.";
+
+      setQuestionThreads((prev) => ({
+        ...prev,
+        [sectionId]: [
+          ...(prev[sectionId] || []),
+          { id: `answer-${Date.now()}`, role: "assistant", text: answerText },
+        ],
+      }));
+
+      if (res.ok) speakAnswer(answerText);
+    } catch {
+      setQuestionThreads((prev) => ({
+        ...prev,
+        [sectionId]: [
+          ...(prev[sectionId] || []),
+          {
+            id: `error-${Date.now()}`,
+            role: "assistant",
+            text: "Couldn't reach the tutor right now. Please try again.",
+          },
+        ],
+      }));
+    } finally {
+      setIsAnsweringQuestion(false);
+    }
+  };
+
+  const handleQuestionSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submitQuestion(questionDraft);
   };
 
   // Close audio player & clean up
@@ -456,9 +576,8 @@ export default function CoursePage({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      audioRef.current?.pause();
+      answerAudioRef.current?.pause();
     };
   }, []);
 
@@ -686,9 +805,26 @@ export default function CoursePage({
             </div>
 
             {/* 2. Main split lecture screen */}
-            <div className="grow grid grid-cols-1 lg:grid-cols-12 gap-8 my-6 overflow-hidden min-h-0">
-              {/* SLIDE VISUALIZATION VIEWPORT (lg:col-span-8) */}
-              <div className="lg:col-span-9 bg-neutral-900 rounded-2xl p-8 md:p-12 flex flex-col h-full overflow-y-auto">
+            <div className="grow grid grid-cols-1 lg:grid-cols-12 gap-5 my-6 overflow-hidden min-h-0">
+              {/* QUESTION CHAT PANEL */}
+              <CourseTutorPanel
+                isOpen={isQuestionPanelOpen}
+                onToggle={() => setIsQuestionPanelOpen((prev) => !prev)}
+                sectionTitle={activeSection.title}
+                messages={activeQuestionThread}
+                isAnswering={isAnsweringQuestion}
+                suggestedQuestions={suggestedQuestions}
+                onSubmitQuestion={submitQuestion}
+                draft={questionDraft}
+                onDraftChange={setQuestionDraft}
+              />
+
+              {/* SLIDE VISUALIZATION VIEWPORT */}
+              <div
+                className={`bg-neutral-900 rounded-2xl p-8 md:p-12 flex flex-col h-full overflow-y-auto transition-[grid-column] duration-200 ${
+                  isQuestionPanelOpen ? "lg:col-span-6" : "lg:col-span-8"
+                }`}
+              >
                 {/* Slide page index */}
                 <div className="flex items-center justify-between text-xs text-neutral-500 font-mono tracking-wider font-semibold uppercase">
                   <span>THERMODYNAMICS LECTURE SERIES</span>
@@ -724,7 +860,7 @@ export default function CoursePage({
                 </div>
               </div>
 
-              {/* AI TEACHER CONTROLLER PANEL (lg:col-span-4) */}
+              {/* AI TEACHER CONTROLLER PANEL */}
               <div className="lg:col-span-3 flex flex-col gap-4 justify-between h-full">
                 {/* Top section: The Teacher representation */}
                 <div className="bg-neutral-900 rounded-2xl p-6 flex flex-col items-center justify-center text-center grow">
@@ -908,6 +1044,7 @@ export default function CoursePage({
                   </div>
                 </div>
               </div>
+
             </div>
           </motion.div>
         )}
