@@ -16,6 +16,7 @@ import {
   CaretRightIcon,
   HeadphonesIcon,
   ClockIcon,
+  ArrowRightIcon,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -482,8 +483,6 @@ export default function CoursePage({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-neutral-100">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-primary mb-1">
-            <span>Engineering Core</span>
-            <span>•</span>
             <span>Intermediate</span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">
@@ -522,7 +521,7 @@ export default function CoursePage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-14 mt-8">
         <div className="lg:col-span-4 flex flex-col gap-4">
           <div className="bg-neutral-50 rounded-3xl px-5 py-6">
-            <h2 className="text-sm font-semibold text-neutral-500 px-2 mb-3">
+            <h2 className="text-sm font-medium text-neutral-500 px-2 mb-3">
               Course Syllabus
             </h2>
 
@@ -539,13 +538,12 @@ export default function CoursePage({
                         : "bg-transparent hover:bg-primary/5"
                     }`}
                   >
-                    {/* Circle Checkmark Icon - FLAT */}
                     <button
                       onClick={(e) => toggleSectionCompleted(section.id, e)}
                       className={`mt-0.5 flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full border transition-all duration-200 ${
                         section.completed
                           ? "bg-success-500 border-success-600 text-white"
-                          : "border-neutral-300 hover:border-primary bg-white text-transparent group-hover:text-primary/30"
+                          : "bg-white text-transparent group-hover:text-primary/30"
                       }`}
                     >
                       {section.completed ? (
@@ -569,9 +567,9 @@ export default function CoursePage({
                         </div>
                       </div>
                       <h3
-                        className={`text-sm font-semibold mt-0.5 transition-colors duration-150 ${
+                        className={`text-sm font-medium mt-0.5 transition-colors duration-150 ${
                           isActive
-                            ? "text-primary font-semibold"
+                            ? "text-primary font-medium"
                             : "text-neutral-800 group-hover:text-neutral-900"
                         }`}
                       >
@@ -586,25 +584,17 @@ export default function CoursePage({
         </div>
 
         <div className="lg:col-span-8 flex flex-col gap-6">
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col">
             <div className="bg-white rounded-2xl flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-neutral-400">
-                  Estimate: {activeSection.duration} lecture •{" "}
-                  {activeSection.slides.length} slides
-                </span>
-              </div>
-
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
                   {activeSection.title}
                 </h2>
-                <p className="text-neutral-600 text-sm leading-relaxed mt-3">
+                <p className="text-neutral-600  leading-relaxed mt-2">
                   {activeSection.description}
                 </p>
               </div>
 
-              {/* Bullet points checklist */}
               <div className="mt-2 pt-4 border-t border-neutral-100">
                 <h4 className="text-xs font-semibold text-neutral-500 mb-3">
                   What you will learn in this section:
@@ -627,20 +617,23 @@ export default function CoursePage({
               </div>
             </div>
 
-            {/* DYNAMIC PRESENTATION SLIDE PREVIEW DECK - FLAT */}
-            <div className="bg-neutral-950 border border-neutral-900 rounded-2xl p-8 relative overflow-hidden flex flex-col justify-between min-h-[350px] text-white">
-              {/* Slide corner metadata */}
+            <div className="z-10 pr-3 pl-6 flex items-center justify-between flex-wrap gap-4 bg-neutral-50 rounded-t-3xl mt-12 py-3">
               <div className="flex items-center justify-between z-10">
-                <span className="text-[10px] font-bold text-primary tracking-widest uppercase">
-                  THERMODYNAMICS CONCEPT PREVIEW
-                </span>
-                <div className="text-neutral-500 font-mono text-xs tracking-wider uppercase">
-                  SLIDE {activeSlideIdx + 1} OF {activeSection.slides.length}
+                <div className="text-neutral-500 font-mono text-xs tracking-wider">
+                  {activeSection.slides.length} Slides
                 </div>
               </div>
-
-              {/* Slide content viewport */}
-              <div className="my-6 z-10 flex flex-col gap-4">
+              {/* Primary launcher button - FLAT */}
+              <button
+                onClick={startFullClassroom}
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-600 text-white font-medium text-sm px-5 py-2 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
+              >
+                <span>Start Class</span>
+                <ArrowRightIcon weight="bold" size={16} />
+              </button>
+            </div>
+            <div className="bg-neutral-950 aspect-video rounded-3xl rounded-t-none p-8 relative overflow-hidden flex flex-col justify-between text-white">
+              <div className="my-auto z-10 flex flex-col gap-4">
                 <h3 className="text-xl md:text-2xl font-serif text-white tracking-tight">
                   {activeSlide.title}
                 </h3>
@@ -657,53 +650,6 @@ export default function CoursePage({
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Slider Next/Prev manual navigator + Classroom Launcher - FLAT */}
-              <div className="z-10 pt-5 border-t border-neutral-900 flex items-center justify-between flex-wrap gap-4">
-                {/* Visual slide paginator buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handlePrevSlide}
-                    disabled={activeSlideIdx === 0}
-                    className="p-2 bg-neutral-900 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                    title="Previous Slide"
-                  >
-                    <CaretLeftIcon size={16} weight="bold" />
-                  </button>
-
-                  {/* Paginator dots */}
-                  <div className="flex gap-1.5 px-1">
-                    {activeSection.slides.map((_, i) => (
-                      <span
-                        key={i}
-                        className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                          i === activeSlideIdx ? "bg-primary" : "bg-neutral-800"
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handleNextSlide}
-                    disabled={
-                      activeSlideIdx === activeSection.slides.length - 1
-                    }
-                    className="p-2 bg-neutral-900 rounded-lg hover:bg-neutral-800 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                    title="Next Slide"
-                  >
-                    <CaretRightIcon size={16} weight="bold" />
-                  </button>
-                </div>
-
-                {/* Primary launcher button - FLAT */}
-                <button
-                  onClick={startFullClassroom}
-                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary-600 text-white font-semibold text-sm px-6 py-3 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
-                >
-                  <PlayIcon size={16} weight="fill" />
-                  <span>Start Class with AI Teacher</span>
-                </button>
               </div>
             </div>
           </div>

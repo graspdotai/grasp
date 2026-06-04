@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import {
   Bricolage_Grotesque,
   DM_Serif_Display,
-  Google_Sans_Code,
+  Google_Sans,
 } from "next/font/google";
 import "./globals.css";
 
-const googleSans = Google_Sans_Code({
+const googleSans = Google_Sans({
   subsets: ["latin"],
 });
 
