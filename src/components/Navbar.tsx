@@ -78,10 +78,15 @@ export default function Navbar() {
               onClick={() => setIsOpen((open) => !open)}
               className="flex items-center gap-2 rounded-full pl-1 pr-3 py-1 hover:bg-neutral-100 transition-colors"
             >
-              <UserAvatar profile={profile} size={32} />
-              <span className="text-sm font-medium text-neutral-800 hidden sm:inline">
-                {displayName}
-              </span>
+              <UserAvatar profile={profile} size={40} />
+              <div className="flex flex-col leading-tight text-left">
+                <p className="text-xs text-neutral-500">
+                  What are we learning,
+                </p>
+                <p className="text-sm font-medium text-neutral-800 hidden sm:inline">
+                  {displayName}
+                </p>
+              </div>
               <CaretDownIcon
                 size={12}
                 weight="bold"

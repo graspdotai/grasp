@@ -22,11 +22,7 @@ export default function CourseCard({ course }: CourseCardProps) {
     event.preventDefault();
     event.stopPropagation();
 
-    if (
-      !window.confirm(
-        `Delete "${course.title}"? This cannot be undone.`,
-      )
-    ) {
+    if (!window.confirm(`Delete "${course.title}"? This cannot be undone.`)) {
       return;
     }
 
@@ -37,7 +33,9 @@ export default function CourseCard({ course }: CourseCardProps) {
       const userId = getLocalUserId() ?? undefined;
       await deleteCourse(course.id, userId);
       if (userId) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.courses(userId) });
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.courses(userId),
+        });
       }
       void queryClient.removeQueries({ queryKey: queryKeys.course(course.id) });
     } catch (err) {
@@ -52,7 +50,10 @@ export default function CourseCard({ course }: CourseCardProps) {
         href={`/course/${course.id}`}
         className="block cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
       >
-        <CourseThumbnail title={course.title} progress={course.progressPercent} />
+        <CourseThumbnail
+          title={course.title}
+          progress={course.progressPercent}
+        />
 
         <div className="flex items-center w-full justify-between mt-5">
           <div className="pr-10">
@@ -79,19 +80,7 @@ export default function CourseCard({ course }: CourseCardProps) {
         </p>
       </Link>
 
-      <button
-        type="button"
-        onClick={handleDelete}
-        disabled={isDeleting}
-        aria-label={`Delete ${course.title}`}
-        className="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-neutral-500 shadow-sm border border-neutral-200 hover:text-red-600 hover:border-red-200 disabled:opacity-50"
-      >
-        <TrashIcon size={16} weight="bold" />
-      </button>
-
-      {error && (
-        <p className="text-xs text-red-600 mt-1">{error}</p>
-      )}
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>
   );
 }
