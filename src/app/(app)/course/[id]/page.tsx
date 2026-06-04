@@ -667,6 +667,50 @@ export default function CoursePage({
   }, []);
 
   const isAudioPlaying = audioRef.current ? !audioRef.current.paused : false;
+  const isCourseReady = Boolean(activeSection && activeSlide);
+
+  if (isLiveCourse && !isCourseReady) {
+    return (
+      <main className="p-6 max-w-7xl mx-auto min-h-screen bg-white">
+        <Navbar />
+        <div className="mt-6 mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
+          >
+            <ArrowLeftIcon size={14} weight="bold" />
+            <span>Back to Courses</span>
+          </Link>
+        </div>
+        <div className="mt-16 flex flex-col items-center justify-center text-center max-w-md mx-auto">
+          {courseLoadError ? (
+            <>
+              <p className="text-lg font-semibold text-neutral-900">
+                Couldn&apos;t load this course
+              </p>
+              <p className="text-sm text-red-600 mt-2">{courseLoadError}</p>
+              <Link
+                href="/"
+                className="mt-6 text-sm font-semibold text-primary hover:underline"
+              >
+                Back to courses
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              <p className="mt-6 text-lg font-semibold text-neutral-900">
+                {courseTitle}
+              </p>
+              <p className="text-sm text-neutral-500 mt-2">
+                Loading your classroom…
+              </p>
+            </>
+          )}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="p-6 max-w-7xl mx-auto min-h-screen bg-white">

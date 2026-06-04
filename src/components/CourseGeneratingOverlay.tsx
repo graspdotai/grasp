@@ -16,13 +16,11 @@ const STEPS = [
 interface CourseGeneratingOverlayProps {
   open: boolean;
   topic: string;
-  goal: string;
 }
 
 export default function CourseGeneratingOverlay({
   open,
   topic,
-  goal,
 }: CourseGeneratingOverlayProps) {
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -54,92 +52,64 @@ export default function CourseGeneratingOverlay({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center"
+          transition={{ duration: 0.25 }}
+          className="fixed inset-0 z-[200] bg-neutral-950"
         >
-          <GradientAnimationBackground interactive />
+          <GradientAnimationBackground interactive className="opacity-90" />
 
-          <div className="relative z-10 w-full max-w-lg px-6 text-center">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-              className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md border border-white/20"
-            >
-              <SparkleIcon size={32} weight="fill" className="text-white" />
-            </motion.div>
-
-            <motion.h2
-              id="course-generating-title"
-              initial={{ y: 12, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.15 }}
-              className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white"
-            >
-              Creating your course
-            </motion.h2>
-
-            {topic && (
-              <motion.p
-                initial={{ y: 8, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.22 }}
-                className="mt-3 text-lg font-medium text-white/90"
-              >
-                {topic}
-              </motion.p>
-            )}
-
-            {goal && (
-              <motion.p
-                initial={{ y: 8, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.28 }}
-                className="mt-2 text-sm text-white/60 line-clamp-2"
-              >
-                {goal}
-              </motion.p>
-            )}
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.35 }}
-              className="mt-10 flex flex-col items-center gap-4"
-            >
-              <div className="flex gap-1.5">
-                {[0, 1, 2].map((i) => (
-                  <motion.span
-                    key={i}
-                    className="h-2 w-2 rounded-full bg-white"
-                    animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.1, 0.85] }}
-                    transition={{
-                      duration: 1.2,
-                      repeat: Infinity,
-                      delay: i * 0.2,
-                    }}
-                  />
-                ))}
+          <div className="relative z-10 flex min-h-full items-center justify-center px-6 py-12">
+            <div className="w-full max-w-md text-center">
+              <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 border border-white/15">
+                <SparkleIcon size={28} weight="fill" className="text-white" />
               </div>
 
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={stepIndex}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.35 }}
-                  className="text-sm font-medium text-white/75 min-h-[1.25rem]"
-                >
-                  {STEPS[stepIndex]}
-                </motion.p>
-              </AnimatePresence>
+              <h2
+                id="course-generating-title"
+                className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-white"
+              >
+                Creating your course
+              </h2>
 
-              <p className="text-xs text-white/45 max-w-sm">
-                This usually takes 1–3 minutes. We&apos;re grounding every module in
-                real sources, then shaping lessons for voice.
-              </p>
-            </motion.div>
+              {topic ? (
+                <p className="mt-3 text-base font-medium text-white/90 line-clamp-2">
+                  {topic}
+                </p>
+              ) : null}
+
+              <div className="mt-8 flex flex-col items-center gap-3">
+                <div className="flex gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <motion.span
+                      key={i}
+                      className="h-1.5 w-1.5 rounded-full bg-white/80"
+                      animate={{ opacity: [0.35, 1, 0.35] }}
+                      transition={{
+                        duration: 1.2,
+                        repeat: Infinity,
+                        delay: i * 0.2,
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={stepIndex}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-sm text-white/70 min-h-[1.25rem]"
+                  >
+                    {STEPS[stepIndex]}
+                  </motion.p>
+                </AnimatePresence>
+
+                <p className="text-xs text-white/40 max-w-xs pt-1">
+                  Usually 1–3 minutes. Hang tight.
+                </p>
+              </div>
+            </div>
           </div>
         </motion.div>
       )}

@@ -65,13 +65,11 @@ export default function NewCoursePage() {
     }
   }
 
+  if (isSubmitting) {
+    return <CourseGeneratingOverlay open topic={topic.trim()} />;
+  }
+
   return (
-    <>
-      <CourseGeneratingOverlay
-        open={isSubmitting}
-        topic={topic.trim()}
-        goal={goal.trim()}
-      />
     <main className="min-h-screen bg-neutral-50">
       <div className="max-w-7xl mx-auto px-5 py-5 sm:px-8 sm:py-6">
         <Navbar />
@@ -327,6 +325,5 @@ export default function NewCoursePage() {
         </div>
       </div>
     </main>
-    </>
   );
 }
