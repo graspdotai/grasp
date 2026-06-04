@@ -21,7 +21,8 @@ export default function SignupForm() {
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
-    const result = await signUpWithEmail(email, password);
+    const name = String(formData.get("fullName") ?? "").trim();
+    const result = await signUpWithEmail(email, password, name || undefined);
 
     setIsSubmitting(false);
 
@@ -66,6 +67,20 @@ export default function SignupForm() {
 
           <form className="mt-8" onSubmit={handleSubmit}>
             <div>
+              <label className="text-xs text-slate-700" htmlFor="fullName">
+                Full name
+              </label>
+              <input
+                autoComplete="name"
+                className="mt-1.5 h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-1"
+                id="fullName"
+                name="fullName"
+                placeholder="Your name"
+                type="text"
+              />
+            </div>
+
+            <div className="mt-5">
               <label className="text-xs text-slate-700" htmlFor="email">
                 Email
               </label>

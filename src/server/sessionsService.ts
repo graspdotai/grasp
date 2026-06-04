@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  clampText,
+  COURSE_SUMMARY_MAX,
+  MODULE_DESCRIPTION_MAX,
+} from "@/lib/clampText";
 import { onboardingProfileSchema } from "@/lib/onboarding";
 import { HttpError } from "@/server/errors";
 import { generateLessonPack } from "@/server/exaService";
@@ -218,7 +223,7 @@ export async function createLearningSession(payload: unknown) {
       learner_level: input.learnerLevel,
       search_type: input.type,
       status: "generating",
-      summary: parsedContent.data.summary,
+      summary: clampText(parsedContent.data.summary, COURSE_SUMMARY_MAX),
       learning_objectives: parsedContent.data.learningObjectives,
       quiz_questions: parsedContent.data.quizQuestions,
       grounding: lessonPack.grounding,
@@ -259,7 +264,7 @@ export async function createLearningSession(payload: unknown) {
           session_id: sessionRow.id,
           position: index + 1,
           title: outlineModule.title,
-          description: outlineModule.description,
+          description: clampText(outlineModule.description, MODULE_DESCRIPTION_MAX),
           duration: moduleDurationDefault,
           completed: false,
           created_at: nowIso,

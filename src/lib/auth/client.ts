@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import type { AuthResponse, OnboardingDetails } from "@/lib/auth/types";
+import { extractFullNameFromMetadata } from "@/lib/profileDisplay";
 import { setLocalUserEmail, setLocalUserId } from "@/lib/userSession";
 
 async function persistLocalUser() {
@@ -13,6 +14,21 @@ async function persistLocalUser() {
   if (user?.id) {
     setLocalUserId(user.id);
     if (user.email) setLocalUserEmail(user.email);
+
+    const fullName = extractFullNameFromMetadata(
+      user.user_metadata as Record<string, unknown>,
+    );
+    const now = new Date().toISOString();
+
+    await supabase.from("profiles").upsert(
+      {
+        id: user.id,
+        email: user.email,
+        ...(fullName ? { full_name: fullName } : {}),
+        updated_at: now,
+      },
+      { onConflict: "id" },
+    );
   }
 }
 
@@ -35,12 +51,17 @@ function errorMessage(error: unknown) {
 export async function signUpWithEmail(
   email: string,
   password: string,
+  fullName?: string,
 ): Promise<AuthResponse> {
   try {
     const supabase = createClient();
+    const trimmedName = fullName?.trim();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: trimmedName
+        ? { data: { full_name: trimmedName } }
+        : undefined,
     });
 
     if (error) {
@@ -142,10 +163,15 @@ export async function saveOnboardingDetails(
       };
     }
 
+    const fullName = extractFullNameFromMetadata(
+      user.user_metadata as Record<string, unknown>,
+    );
+
     const { error } = await supabase.from("profiles").upsert(
       {
         id: user.id,
         email: user.email,
+        ...(fullName ? { full_name: fullName } : {}),
         onboarding_completed: true,
         learner_types: details.learnerTypes,
         learning_interests: details.learningInterests,

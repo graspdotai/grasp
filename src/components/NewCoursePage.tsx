@@ -22,13 +22,6 @@ const LEVELS = [
   { value: "advanced", label: "Advanced" },
 ] as const;
 
-const PIPELINE = [
-  { title: "Research", detail: "Exa pulls trusted sources for your topic" },
-  { title: "Syllabus", detail: "Modules and learning objectives are structured" },
-  { title: "Lessons", detail: "Slides + voice scripts generated per module" },
-  { title: "Classroom", detail: "Learn with Aethex voice and the AI tutor" },
-];
-
 export default function NewCoursePage() {
   const router = useRouter();
   const [topic, setTopic] = useState("");
@@ -201,19 +194,9 @@ export default function NewCoursePage() {
                 </p>
               </div>
 
-              <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
-                {PIPELINE.map((step, i) => (
-                  <div
-                    key={step.title}
-                    className="rounded-2xl bg-white/10 px-3 py-3 backdrop-blur-sm"
-                  >
-                    <span className="text-[10px] font-bold text-white/50">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <p className="text-sm font-semibold text-white mt-1">{step.title}</p>
-                  </div>
-                ))}
-              </div>
+              <p className="relative z-10 text-sm text-white/70 mt-4 max-w-md leading-relaxed">
+                Voice lessons, slides, and an AI tutor — built for how you learn.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -301,26 +284,6 @@ export default function NewCoursePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-neutral-100 p-6">
-              <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-3">
-                How generation works
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {PIPELINE.map((step) => (
-                  <div key={step.title} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <SparkleIcon size={14} className="text-primary" weight="fill" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-neutral-800">{step.title}</p>
-                      <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">
-                        {step.detail}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>

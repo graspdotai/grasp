@@ -5,17 +5,17 @@ import { HttpError } from "@/server/errors";
 
 const moduleContentSchema = z.object({
   duration: z.string().min(3),
-  keyPoints: z.array(z.string().min(3)).min(2).max(6),
+  keyPoints: z.array(z.string().min(3)).min(4).max(8),
   slides: z
     .array(
       z.object({
         title: z.string().min(3),
-        points: z.array(z.string().min(3)).min(2).max(5),
-        explanationText: z.string().min(20),
+        points: z.array(z.string().min(3)).min(3).max(6),
+        explanationText: z.string().min(80),
       })
     )
-    .min(2)
-    .max(5),
+    .min(4)
+    .max(6),
 });
 
 export type ModuleContent = z.infer<typeof moduleContentSchema>;
@@ -73,15 +73,16 @@ Return JSON with this exact shape:
     {
       "title": "string",
       "points": ["bullet", "bullet", "bullet"],
-      "explanationText": "2-4 sentences the AI tutor reads aloud"
+      "explanationText": "A full spoken lesson for this slide (120-180 words)"
     }
   ]
 }
 
 Rules:
-- 3 to 4 slides per module
-- 3 bullet points per slide
-- explanationText is conversational and TTS-friendly (40-90 words)
+- 4 to 5 slides per module with substantive teaching content
+- 4 to 5 keyPoints for the module
+- 3 to 4 bullet points per slide (specific, not generic)
+- explanationText is conversational and TTS-friendly (120-180 words per slide)
 - duration should be about ${targetDuration}`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -97,7 +98,7 @@ Rules:
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 2000,
+      max_tokens: 4096,
       temperature: 0.4,
     }),
   });

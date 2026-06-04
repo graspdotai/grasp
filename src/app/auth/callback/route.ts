@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { syncProfileFromAuthUser } from "@/server/profilesService";
 
 function getSafeNextPath(request: NextRequest) {
   const nextPath = request.nextUrl.searchParams.get("next");
@@ -48,13 +49,26 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     const signInUrl = new URL("/signin", request.url);
     signInUrl.searchParams.set("error", "email_confirmation_failed");
 
     return NextResponse.redirect(signInUrl);
+  }
+
+  const user = sessionData.user;
+  if (user) {
+    try {
+      await syncProfileFromAuthUser({
+        id: user.id,
+        email: user.email,
+        user_metadata: user.user_metadata as Record<string, unknown>,
+      });
+    } catch (syncError) {
+      console.warn("Profile sync after OAuth failed:", syncError);
+    }
   }
 
   return response;

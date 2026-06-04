@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Avatar from "boring-avatars";
+import UserAvatar from "@/components/UserAvatar";
+import { resolveDisplayName } from "@/lib/profileDisplay";
+import { resolveAvatarVariant } from "@/lib/avatar";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import Navbar from "@/components/Navbar";
 import { loadOnboardingProfile } from "@/lib/onboardingStorage";
@@ -12,6 +14,8 @@ import type { OnboardingProfile } from "@/lib/onboarding";
 type ProfileRow = {
   full_name: string | null;
   email: string | null;
+  avatar_variant: string | null;
+  avatar_url: string | null;
   learner_types: string[];
   learning_interests: string[];
   lesson_language: string | null;
@@ -39,8 +43,11 @@ export default function ProfilePage() {
       .finally(() => setIsLoading(false));
   }, [userId]);
 
-  const displayName = profile?.full_name ?? "Grasp learner";
   const email = profile?.email ?? getLocalUserEmail() ?? "Not signed in";
+  const displayName = resolveDisplayName({
+    fullName: profile?.full_name,
+    email,
+  });
 
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -57,7 +64,7 @@ export default function ProfilePage() {
 
         <div className="bg-white rounded-3xl border border-neutral-100 p-6 sm:p-8">
           <div className="flex items-center gap-4">
-            <Avatar name={displayName} size={56} variant="beam" />
+            <UserAvatar profile={profile} email={email} size={56} />
             <div>
               <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
               <p className="text-sm text-neutral-500 mt-0.5">{email}</p>
@@ -149,12 +156,19 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <Link
-            href="/onboarding"
-            className="inline-block mt-8 text-sm font-semibold text-primary hover:underline"
-          >
-            Update onboarding preferences
-          </Link>
+          <div className="mt-8 flex flex-wrap gap-4 text-sm">
+            <Link href="/settings" className="font-semibold text-primary hover:underline">
+              Edit name & avatar
+            </Link>
+            <Link href="/onboarding" className="font-semibold text-primary hover:underline">
+              Update onboarding
+            </Link>
+          </div>
+          {profile?.avatar_variant && (
+            <p className="text-xs text-neutral-400 mt-2">
+              Avatar style: {resolveAvatarVariant(profile)}
+            </p>
+          )}
         </div>
       </div>
     </main>

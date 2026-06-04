@@ -126,16 +126,16 @@ function buildLessonQuery(input: z.infer<typeof lessonPackRequestSchema>): strin
   return parts.join(" ");
 }
 
-function buildOnboardingSystemNote(onboarding?: OnboardingProfile): string {
-  if (!onboarding) {
-    return "Prefer primary and high-quality educational sources. Deduplicate similar sources. Keep output grounded in retrieved evidence.";
-  }
+function buildLessonPackSystemNote(onboarding?: OnboardingProfile): string {
+  const base =
+    "Prefer primary and high-quality educational sources. Deduplicate similar sources. Keep output grounded in retrieved evidence. " +
+    "Course summary: at most 2 short sentences (~200 characters total). " +
+    "Each lessonOutline item description: at most 2 short sentences (~150 characters). " +
+    "Do not paste the learner goal verbatim into summary or descriptions.";
 
-  return [
-    "Prefer primary and high-quality educational sources. Deduplicate similar sources. Keep output grounded in retrieved evidence.",
-    "Tailor the lesson outline to this learner profile:",
-    formatOnboardingForPrompt(onboarding),
-  ].join(" ");
+  if (!onboarding) return base;
+
+  return `${base} Tailor the lesson outline to this learner profile: ${formatOnboardingForPrompt(onboarding)}`;
 }
 
 export async function generateLessonPack(payload: unknown) {
@@ -149,12 +149,15 @@ export async function generateLessonPack(payload: unknown) {
       numResults: 8,
       includeDomains: input.includeDomains,
       excludeDomains: input.excludeDomains,
-      systemPrompt: buildOnboardingSystemNote(input.onboarding),
+      systemPrompt: buildLessonPackSystemNote(input.onboarding),
       outputSchema: {
         type: "object",
         required: ["summary", "learningObjectives", "lessonOutline", "quizQuestions"],
         properties: {
-          summary: { type: "string", description: "Grounded summary of the topic and why it matters." },
+          summary: {
+            type: "string",
+            description: "Max 2 short sentences (~200 chars). Why this topic matters — not the learner's full goal.",
+          },
           learningObjectives: { type: "array", items: { type: "string" } },
           lessonOutline: {
             type: "array",
@@ -163,7 +166,10 @@ export async function generateLessonPack(payload: unknown) {
               required: ["title", "description"],
               properties: {
                 title: { type: "string" },
-                description: { type: "string" },
+                description: {
+                  type: "string",
+                  description: "Max 2 short sentences (~150 chars). Module overview only.",
+                },
               },
             },
           },

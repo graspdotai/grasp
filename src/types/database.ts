@@ -15,6 +15,7 @@ export interface Database {
           email: string | null;
           full_name: string | null;
           avatar_url: string | null;
+          avatar_variant: string | null;
           onboarding_completed: boolean;
           learner_types: string[];
           learning_interests: string[];
@@ -28,6 +29,7 @@ export interface Database {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          avatar_variant?: string | null;
           onboarding_completed?: boolean;
           learner_types?: string[];
           learning_interests?: string[];

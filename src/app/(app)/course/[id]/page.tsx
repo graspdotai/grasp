@@ -729,7 +729,7 @@ export default function CoursePage({
 
       {/* Course Title and Progress Header - FLAT aesthetic (No shadows) */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-neutral-100">
-        <div>
+        <div className="max-w-2xl">
           {learnerLevelLabel && (
             <div className="flex items-center gap-2 text-xs font-semibold text-primary mb-1">
               <span>{learnerLevelLabel}</span>
@@ -737,7 +737,9 @@ export default function CoursePage({
           )}
           <h1 className="text-3xl font-extrabold tracking-tight">{courseTitle}</h1>
           {courseSummary && (
-            <p className="text-neutral-500 text-sm mt-1">{courseSummary}</p>
+            <p className="text-neutral-500 text-sm mt-1 leading-relaxed line-clamp-3">
+              {courseSummary}
+            </p>
           )}
           {courseLoadError && (
             <p className="text-sm text-red-600 mt-2">{courseLoadError}</p>
@@ -839,16 +841,16 @@ export default function CoursePage({
         <div className="lg:col-span-8 flex flex-col gap-6">
           <div className="flex flex-col">
             <div className="bg-white rounded-2xl flex flex-col gap-2">
-              <div>
+              <div className="max-w-2xl">
                 <h2 className="text-2xl font-bold tracking-tight text-neutral-900">
                   {activeSection.title}
                 </h2>
-                <p className="text-neutral-600  leading-relaxed mt-2">
+                <p className="text-neutral-600 text-sm leading-relaxed mt-2 line-clamp-3">
                   {activeSection.description}
                 </p>
               </div>
 
-              <div className="mt-2 pt-4 border-t border-neutral-100">
+              <div className="mt-2 pt-4 border-t border-neutral-100 max-w-3xl">
                 <h4 className="text-xs text-neutral-500 mb-3">
                   What you will learn in this section:
                 </h4>
