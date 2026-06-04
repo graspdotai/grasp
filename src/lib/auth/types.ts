@@ -8,7 +8,6 @@ export type OnboardingDetails = {
 export type AuthResponse =
   | {
       ok: true;
-      needsEmailConfirmation?: boolean;
       redirectTo?: string;
     }
   | {

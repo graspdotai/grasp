@@ -11,13 +11,11 @@ export default function SignupForm() {
   const router = useRouter();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage("");
-    setSuccessMessage("");
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
@@ -32,17 +30,11 @@ export default function SignupForm() {
       return;
     }
 
-    if (result.needsEmailConfirmation) {
-      setSuccessMessage("Check your email to confirm your account, then come back to sign in.");
-      return;
-    }
-
-    router.push("/onboarding");
+    router.push(result.redirectTo ?? "/onboarding");
   }
 
   async function handleGoogleSignUp() {
     setErrorMessage("");
-    setSuccessMessage("");
     const result = await signInWithGoogle();
 
     if (!result.ok) {
@@ -143,12 +135,6 @@ export default function SignupForm() {
           {errorMessage && (
             <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
               {errorMessage}
-            </p>
-          )}
-
-          {successMessage && (
-            <p className="mt-3 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-700">
-              {successMessage}
             </p>
           )}
 

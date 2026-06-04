@@ -28,16 +28,26 @@ export async function signUpWithEmail(
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: authCallbackUrl("/onboarding"),
-      },
     });
 
     if (error) {
-      return { ok: false, message: error.message };
+      return {
+        ok: false,
+        message: error.message.toLowerCase().includes("rate limit")
+          ? "We could not create your account right now. Please try again shortly."
+          : error.message,
+      };
     }
 
-    return { ok: true, needsEmailConfirmation: !data.session };
+    if (!data.session) {
+      return {
+        ok: false,
+        message:
+          "Email confirmation is still enabled in Supabase. Disable it to let users continue immediately.",
+      };
+    }
+
+    return { ok: true, redirectTo: "/onboarding" };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
   }

@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 const AUTH_ROUTES = ["/signin", "/signup"];
-const PUBLIC_ROUTES = ["/auth/callback"];
+const ONBOARDING_ROUTE = "/onboarding";
+const PUBLIC_ROUTES = ["/auth/callback", "/auth/signout"];
 
 function hasSupabaseConfig() {
   return (
@@ -21,6 +22,14 @@ function isPublicRoute(pathname: string) {
   return PUBLIC_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
+}
+
+function redirect(request: NextRequest, pathname: string) {
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = pathname;
+  redirectUrl.search = "";
+
+  return NextResponse.redirect(redirectUrl);
 }
 
 export async function middleware(request: NextRequest) {
@@ -63,6 +72,10 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  if (isPublicRoute(pathname)) {
+    return response;
+  }
+
   if (!user && !isAuthRoute(pathname) && !isPublicRoute(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/signin";
@@ -74,12 +87,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && isAuthRoute(pathname)) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/";
-    redirectUrl.search = "";
+  if (!user) {
+    return response;
+  }
 
-    return NextResponse.redirect(redirectUrl);
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("onboarding_completed")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    const signOutUrl = request.nextUrl.clone();
+    signOutUrl.pathname = "/auth/signout";
+    signOutUrl.searchParams.set("reason", "profile_error");
+
+    return NextResponse.redirect(signOutUrl);
+  }
+
+  const hasCompletedOnboarding = Boolean(profile?.onboarding_completed);
+
+  if (isAuthRoute(pathname)) {
+    return redirect(
+      request,
+      hasCompletedOnboarding ? "/" : ONBOARDING_ROUTE,
+    );
+  }
+
+  if (!hasCompletedOnboarding && pathname !== ONBOARDING_ROUTE) {
+    return redirect(request, ONBOARDING_ROUTE);
+  }
+
+  if (hasCompletedOnboarding && pathname === ONBOARDING_ROUTE) {
+    return redirect(request, "/");
   }
 
   return response;
