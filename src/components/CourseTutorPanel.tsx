@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  CaretRightIcon,
-  CaretDownIcon,
-  PaperPlaneTiltIcon,
-  PlayIcon,
+  MicrophoneIcon,
   PauseIcon,
+  PlayIcon,
+  SparkleIcon,
+  StopIcon,
+  XIcon,
 } from "@phosphor-icons/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import LogoIcon from "@/components/Logo";
 
 export interface TutorMessage {
@@ -31,119 +32,161 @@ interface Props {
   onDraftChange: (value: string) => void;
 }
 
-const BAR_HEIGHTS = [4, 8, 12, 7, 10, 5, 9, 6];
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onresult:
+    | ((event: {
+        resultIndex: number;
+        results: {
+          length: number;
+          [index: number]: {
+            isFinal: boolean;
+            [index: number]: { transcript: string };
+          };
+        };
+      }) => void)
+    | null;
+};
 
-function AudioMessage({ message }: { message: TutorMessage }) {
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
+const BAR_HEIGHTS = [10, 18, 30, 22, 38, 18, 28, 14, 34, 20, 26];
+
+function VoiceBars({ active }: { active: boolean }) {
+  const shouldReduceMotion = useReducedMotion();
+
+  return (
+    <div className="flex h-12 items-center justify-center gap-1.5" aria-hidden="true">
+      {BAR_HEIGHTS.map((height, index) => (
+        <motion.span
+          key={`${height}-${index}`}
+          className="w-1.5 rounded-full bg-primary"
+          animate={
+            active && !shouldReduceMotion
+              ? { height: [height, height + 16, height] }
+              : { height }
+          }
+          transition={{
+            duration: 0.55 + index * 0.03,
+            repeat: active && !shouldReduceMotion ? Infinity : 0,
+            ease: "easeInOut",
+            delay: index * 0.04,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AudioReply({ message }: { message: TutorMessage }) {
   const [playing, setPlaying] = useState(false);
-  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!message.audioUrl) return;
+
     const audio = new Audio(message.audioUrl);
     audioRef.current = audio;
     audio.onended = () => setPlaying(false);
-    audio.play().then(() => setPlaying(true)).catch(() => {});
-    return () => { audio.pause(); };
+    audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+
+    return () => {
+      audio.pause();
+      audioRef.current = null;
+    };
   }, [message.audioUrl]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
+
     if (playing) {
       audio.pause();
       setPlaying(false);
-    } else {
-      audio.play().then(() => setPlaying(true)).catch(() => {});
+      return;
     }
+
+    audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
   };
 
-  return (
-    <div className="flex gap-3 justify-start items-start">
-      <span className="flex-shrink-0 mt-0.5 w-7 h-7 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center overflow-hidden">
-        <span className="scale-[0.32] origin-center block">
-          <LogoIcon />
-        </span>
-      </span>
+  if (message.audioLoading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-5"
+      >
+        <div className="flex items-center justify-center">
+          <VoiceBars active />
+        </div>
+      </motion.div>
+    );
+  }
 
-      <div className="flex flex-col gap-2 max-w-[88%]">
-        {/* Loading state */}
-        {message.audioLoading && (
-          <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-3">
-            <span className="text-sm text-neutral-500">Generating audio</span>
-            <div className="flex items-end gap-0.5 h-4">
-              {BAR_HEIGHTS.map((h, i) => (
-                <motion.div
-                  key={i}
-                  className="w-0.5 bg-neutral-600 rounded-full"
-                  animate={{ height: [h, h + 4, h] }}
-                  transition={{ repeat: Infinity, duration: 0.6 + i * 0.06, ease: "easeInOut", delay: i * 0.05 }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Audio player */}
-        {message.audioUrl && (
-          <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-3">
-            <div className="flex items-end gap-0.5 h-5 flex-1">
-              {BAR_HEIGHTS.map((h, i) => (
-                <motion.div
-                  key={i}
-                  className="w-1 bg-primary/60 rounded-full"
-                  animate={playing ? { height: [h, h + 10, h] } : { height: h }}
-                  transition={{ repeat: Infinity, duration: 0.45 + i * 0.06, ease: "easeInOut", delay: i * 0.04 }}
-                />
-              ))}
-            </div>
-            <button
-              onClick={togglePlay}
-              className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/15 hover:bg-primary/30 flex items-center justify-center text-primary transition-all"
-            >
-              {playing
-                ? <PauseIcon size={14} weight="fill" />
-                : <PlayIcon size={14} weight="fill" />}
-            </button>
-          </div>
-        )}
-
-        {/* Transcript toggle — only once audio is ready */}
-        {message.audioUrl && (
-          <>
-            <button
-              onClick={() => setTranscriptOpen((p) => !p)}
-              className="flex items-center gap-1 text-xs text-neutral-600 hover:text-neutral-400 transition-colors self-start"
-            >
-              <CaretDownIcon
-                size={11}
-                weight="bold"
-                className={`transition-transform duration-200 ${transcriptOpen ? "" : "-rotate-90"}`}
-              />
-              {transcriptOpen ? "Hide transcript" : "Show transcript"}
-            </button>
-
-            <AnimatePresence initial={false}>
-              {transcriptOpen && (
-                <motion.p
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="text-sm text-neutral-400 leading-relaxed overflow-hidden"
-                >
-                  {message.text}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </>
-        )}
-
-        {/* Fallback: show text if TTS failed (no audioUrl, not loading) */}
-        {!message.audioUrl && !message.audioLoading && (
-          <p className="text-sm text-neutral-400 leading-relaxed pt-0.5">{message.text}</p>
-        )}
+  if (!message.audioUrl) {
+    return (
+      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
+        <p className="text-sm leading-relaxed text-neutral-300">{message.text}</p>
       </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={togglePlay}
+          aria-label={playing ? "Pause spoken answer" : "Play spoken answer"}
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors duration-150 ease-out hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+        >
+          {playing ? <PauseIcon size={17} weight="fill" /> : <PlayIcon size={17} weight="fill" />}
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-white">Tutor answered out loud</p>
+          <p className="truncate text-xs text-neutral-500">Replay or read the transcript</p>
+        </div>
+        <VoiceBars active={playing} />
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setShowTranscript((value) => !value)}
+        className="mt-3 min-h-10 rounded-full px-3 text-xs font-semibold text-neutral-400 transition-colors duration-150 ease-out hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+      >
+        {showTranscript ? "Hide transcript" : "Show transcript"}
+      </button>
+
+      <AnimatePresence initial={false}>
+        {showTranscript && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="pt-1 text-sm leading-relaxed text-neutral-300"
+          >
+            {message.text}
+          </motion.p>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -159,180 +202,297 @@ export default function CourseTutorPanel({
   draft,
   onDraftChange,
 }: Props) {
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const shouldReduceMotion = useReducedMotion();
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const draftRef = useRef(draft);
+  const [isRecording, setIsRecording] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const [interimTranscript, setInterimTranscript] = useState("");
+
+  const latestStudentMessage = useMemo(
+    () => [...messages].reverse().find((message) => message.role === "student"),
+    [messages],
+  );
+  const latestAssistantMessage = useMemo(
+    () => [...messages].reverse().find((message) => message.role === "assistant"),
+    [messages],
+  );
+
+  const transcript = `${draft}${interimTranscript ? ` ${interimTranscript}` : ""}`.trim();
+  const canAsk = Boolean(draft.trim()) && !isAnswering;
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognition.onstart = () => {
+      setIsRecording(true);
+      setSpeechError(null);
+    };
+    recognition.onend = () => setIsRecording(false);
+    recognition.onerror = (event) => {
+      setIsRecording(false);
+      setSpeechError(
+        event.error === "not-allowed"
+          ? "Microphone access is blocked."
+          : "I couldn't hear that clearly.",
+      );
+    };
+    recognition.onresult = (event) => {
+      let finalText = "";
+      let interimText = "";
+
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const text = result[0]?.transcript ?? "";
+        if (result.isFinal) {
+          finalText += text;
+        } else {
+          interimText += text;
+        }
+      }
+
+      if (finalText.trim()) {
+        onDraftChange(`${draftRef.current} ${finalText}`.trim());
+      }
+      setInterimTranscript(interimText.trim());
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.abort();
+      recognitionRef.current = null;
+    };
+  }, [onDraftChange]);
+
+  useEffect(() => {
+    if (!isOpen && isRecording) {
+      recognitionRef.current?.stop();
+    }
+  }, [isOpen, isRecording]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isOpen) {
+        onToggle();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onToggle]);
+
+  const toggleRecording = () => {
+    if (!speechSupported) {
+      setSpeechError("Voice questions are not supported in this browser.");
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    setInterimTranscript("");
+    recognitionRef.current?.start();
+  };
+
+  const submitVoiceQuestion = () => {
+    if (!canAsk) return;
+    recognitionRef.current?.stop();
+    setInterimTranscript("");
     onSubmitQuestion(draft);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      onSubmitQuestion(draft);
-    }
+  const askSuggestion = (question: string) => {
+    recognitionRef.current?.stop();
+    setInterimTranscript("");
+    onSubmitQuestion(question);
   };
 
   return (
-    <aside
-      className={`relative h-full min-h-0 transition-all duration-300 ${
-        isOpen ? "lg:col-span-3" : "lg:col-span-1"
-      }`}
-    >
-      {/* Floating collapse / expand FAB */}
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={isOpen ? "Collapse questions" : "Open questions"}
-        className="absolute -right-3.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-700 shadow-xl transition-all duration-200"
-      >
-        <CaretRightIcon
-          size={11}
-          weight="bold"
-          className={`transition-transform duration-300 ${isOpen ? "" : "rotate-180"}`}
-        />
-      </button>
-
-      <AnimatePresence initial={false}>
-        {isOpen ? (
-          <motion.section
-            key="open"
-            id="classroom-question-panel"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="h-full min-h-0 rounded-2xl flex flex-col bg-neutral-900 border border-white/[0.07] overflow-hidden"
-          >
-            {/* Header */}
-            <div className="flex-shrink-0 px-4 pt-4 pb-3 flex items-center gap-2.5 border-b border-white/[0.05]">
-              <span className="flex-shrink-0 flex items-center justify-center overflow-hidden w-5 h-6">
-                <span className="scale-[0.38] origin-left block">
-                  <LogoIcon />
-                </span>
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-white leading-none">Tutor</p>
-                <p className="text-xs text-neutral-500 mt-0.5 leading-none truncate">{sectionTitle}</p>
-              </div>
-            </div>
-
-            {/* Message thread */}
-            <div className="min-h-0 grow overflow-y-auto px-4 py-4 flex flex-col gap-5">
-              {messages.map((message) => {
-                const isStudent = message.role === "student";
-
-                if (!isStudent && (message.audioLoading || message.audioUrl !== undefined)) {
-                  return <AudioMessage key={message.id} message={message} />;
-                }
-
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex gap-3 ${isStudent ? "justify-end" : "justify-start items-start"}`}
-                  >
-                    {!isStudent && (
-                      <span className="flex-shrink-0 mt-0.5 w-7 h-7 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center overflow-hidden">
-                        <span className="scale-[0.32] origin-center block">
-                          <LogoIcon />
-                        </span>
-                      </span>
-                    )}
-                    <div
-                      className={`max-w-[88%] text-sm leading-relaxed ${
-                        isStudent
-                          ? "bg-white/10 border border-white/[0.08] text-neutral-200 px-4 py-2.5 rounded-2xl rounded-br-sm"
-                          : "text-neutral-400 pt-0.5"
-                      }`}
-                    >
-                      {message.text}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {isAnswering && (
-                <div className="flex gap-3 justify-start items-center" aria-live="polite">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center overflow-hidden">
-                    <span className="scale-[0.32] origin-center block">
-                      <LogoIcon />
-                    </span>
+    <div className="pointer-events-none fixed inset-x-4 bottom-5 z-[70] flex justify-end sm:inset-x-auto sm:right-6">
+      <div className="pointer-events-auto flex w-full max-w-[25rem] flex-col items-end gap-3">
+        <AnimatePresence initial={false}>
+          {isOpen && (
+            <motion.section
+              key="voice-recorder"
+              initial={
+                shouldReduceMotion ? false : { opacity: 0, y: 12, scale: 0.98 }
+              }
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={
+                shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }
+              }
+              transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: "easeOut" }}
+              aria-label="Voice question recorder"
+              className="w-full overflow-hidden rounded-3xl border border-white/[0.08] bg-neutral-950/95 text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
+            >
+              <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10">
+                  <span className="block origin-center scale-[0.38]">
+                    <LogoIcon />
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    {[0, 1, 2].map((dot) => (
-                      <span
-                        key={dot}
-                        className="h-1.5 w-1.5 rounded-full bg-neutral-600 animate-pulse"
-                        style={{ animationDelay: `${dot * 160}ms` }}
-                      />
-                    ))}
-                  </div>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-white">Ask by voice</p>
+                  <p className="truncate text-xs text-neutral-500">{sectionTitle}</p>
                 </div>
-              )}
-            </div>
-
-            {/* Quick prompts */}
-            <div className="flex-shrink-0 px-4 pb-3 flex gap-1.5 overflow-x-auto scrollbar-none">
-              {suggestedQuestions.map((question) => (
                 <button
                   type="button"
-                  key={question}
-                  onClick={() => onSubmitQuestion(question)}
-                  disabled={isAnswering}
-                  className="flex-shrink-0 rounded-full border border-white/[0.08] px-3 py-1 text-xs font-medium text-neutral-500 hover:text-neutral-200 hover:border-white/20 disabled:opacity-40 disabled:pointer-events-none transition-all"
+                  onClick={onToggle}
+                  aria-label="Close voice questions"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 transition-colors duration-150 ease-out hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
                 >
-                  {question}
+                  <XIcon size={17} weight="bold" />
                 </button>
-              ))}
-            </div>
-
-            {/* Input box */}
-            <form onSubmit={handleFormSubmit} className="flex-shrink-0 px-3 pb-3">
-              <div className="rounded-2xl border border-white/[0.09] bg-neutral-950/60 focus-within:border-white/[0.18] transition-colors overflow-hidden">
-                <textarea
-                  id="classroom-question"
-                  value={draft}
-                  onChange={(e) => onDraftChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={2}
-                  placeholder="Ask anything about this slide…"
-                  spellCheck
-                  disabled={isAnswering}
-                  className="w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-sm text-white placeholder:text-neutral-700 focus:outline-none disabled:opacity-50 leading-relaxed"
-                />
-                <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
-                  <span className="text-xs text-neutral-700 select-none">⏎ send</span>
-                  <button
-                    type="submit"
-                    disabled={!draft.trim() || isAnswering}
-                    aria-busy={isAnswering}
-                    aria-label="Send question"
-                    className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center hover:bg-primary-600 disabled:opacity-25 disabled:pointer-events-none transition-all"
-                  >
-                    <PaperPlaneTiltIcon size={13} weight="fill" />
-                  </button>
-                </div>
               </div>
-            </form>
-          </motion.section>
-        ) : (
-          <motion.div
-            key="collapsed"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="h-full flex items-center justify-center"
-          >
-            <div className="flex flex-col items-center gap-3">
-              <span className="scale-[0.45] origin-center block">
-                <LogoIcon />
-              </span>
-              <span className="text-[10px] font-semibold text-neutral-300 tracking-widest [writing-mode:vertical-rl]">
-                Ask a question
-              </span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </aside>
+
+              <div className="space-y-4 px-4 py-4">
+                <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] px-4 py-5 text-center">
+                  <button
+                    type="button"
+                    onClick={toggleRecording}
+                    disabled={isAnswering}
+                    aria-pressed={isRecording}
+                    aria-label={isRecording ? "Stop recording" : "Start recording"}
+                    className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 transition-transform duration-150 ease-out hover:scale-[1.03] hover:bg-primary-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 motion-reduce:transition-none motion-reduce:hover:scale-100"
+                  >
+                    {isRecording ? (
+                      <StopIcon size={28} weight="fill" />
+                    ) : (
+                      <MicrophoneIcon size={30} weight="fill" />
+                    )}
+                  </button>
+
+                  <div className="mt-4">
+                    <VoiceBars active={isRecording || isAnswering} />
+                    <p className="mt-2 text-sm font-medium text-neutral-200">
+                      {isRecording
+                        ? "Listening..."
+                        : isAnswering
+                          ? "Thinking through your question"
+                          : "Tap to record your question"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="min-h-20 rounded-2xl border border-white/[0.08] bg-neutral-900/80 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-neutral-600">
+                    Heard
+                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-neutral-300">
+                    {transcript || "Your question will appear here while you speak."}
+                  </p>
+                </div>
+
+                {speechError && (
+                  <p className="rounded-2xl border border-danger-500/20 bg-danger-500/10 px-4 py-3 text-sm text-danger-100">
+                    {speechError}
+                  </p>
+                )}
+
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {suggestedQuestions.map((question) => (
+                    <button
+                      type="button"
+                      key={question}
+                      onClick={() => askSuggestion(question)}
+                      disabled={isAnswering}
+                      className="min-h-10 flex-shrink-0 rounded-full border border-white/[0.08] px-3 text-xs font-semibold text-neutral-400 transition-colors duration-150 ease-out hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={submitVoiceQuestion}
+                  disabled={!canAsk}
+                  aria-busy={isAnswering}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-neutral-950 transition-colors duration-150 ease-out hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                >
+                  <SparkleIcon size={16} weight="fill" />
+                  Ask Grasp
+                </button>
+
+                {latestStudentMessage && (
+                  <div className="space-y-3 border-t border-white/[0.06] pt-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-neutral-600">
+                        Last question
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-neutral-300">
+                        {latestStudentMessage.text}
+                      </p>
+                    </div>
+                    {latestAssistantMessage && <AudioReply message={latestAssistantMessage} />}
+                  </div>
+                )}
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          layout
+          type="button"
+          onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-label={isOpen ? "Hide voice questions" : "Open voice questions"}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: [0.4, 0, 0.2, 1] }}
+          className={`flex h-14 items-center justify-center overflow-hidden rounded-full shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 ${
+            isOpen
+              ? "w-14 bg-neutral-800 text-white shadow-black/30 hover:bg-neutral-700"
+              : "border border-white/[0.08] bg-neutral-950 pl-2 pr-5 text-white shadow-black/50 hover:border-white/[0.15] hover:bg-neutral-900 active:scale-[0.97]"
+          }`}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            {isOpen ? (
+              <motion.span
+                key="x"
+                initial={shouldReduceMotion ? {} : { scale: 0.6, opacity: 0, rotate: -45 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                exit={shouldReduceMotion ? {} : { scale: 0.6, opacity: 0, rotate: 45 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.15, ease: "easeOut" }}
+                className="flex items-center justify-center"
+              >
+                <XIcon size={20} weight="bold" />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="closed"
+                initial={shouldReduceMotion ? {} : { opacity: 0, x: 6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={shouldReduceMotion ? {} : { opacity: 0, x: 6 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.15, ease: "easeOut" }}
+                className="flex items-center gap-3"
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary shadow-md shadow-primary/30">
+                  <MicrophoneIcon size={18} weight="fill" />
+                </span>
+                <span className="text-sm font-semibold">Ask anything</span>
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
+    </div>
   );
 }

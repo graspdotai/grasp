@@ -3,14 +3,19 @@
 import LogoIcon from "./Logo";
 import UserAvatar, { type UserAvatarProfile } from "@/components/UserAvatar";
 import { GearIcon } from "@phosphor-icons/react";
+import { SignOutIcon } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { resolveDisplayName } from "@/lib/profileDisplay";
 import { getLocalUserId } from "@/lib/userSession";
+import Avatar from "boring-avatars";
 
 export default function Navbar() {
   const [profile, setProfile] = useState<UserAvatarProfile | null>(null);
+  const router = useRouter();
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     const userId = getLocalUserId();
@@ -56,6 +61,12 @@ export default function Navbar() {
     fullName: profile?.full_name,
     email: profile?.email,
   });
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/signin");
+    router.refresh();
+  }
 
   return (
     <nav className="w-full py-2 flex items-center justify-between">
@@ -71,15 +82,23 @@ export default function Navbar() {
         )}
         <Link
           href="/settings"
-          className="bg-neutral-50 text-neutral-600 rounded-2xl h-11 w-11 flex items-center justify-center hover:bg-neutral-100 transition-colors"
           aria-label="Settings"
         >
           <GearIcon size={18} />
         </Link>
-        <Link href="/profile" aria-label="Profile">
+        {/* <Link href="/profile" aria-label="Profile">
           <UserAvatar profile={profile} size={44} />
-        </Link>
+        </Link> */}
+        <Avatar name={email || "Grasp user"} />
+        <button
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+          onClick={handleSignOut}
+          title="Sign out"
+          type="button"
+        >
+          <SignOutIcon aria-hidden size={18} />
+        </button>
       </div>
     </nav>
-  );
+  )
 }
