@@ -301,6 +301,7 @@ export default function CoursePage({
 
   // Dynamic active slide index (0-indexed)
   const [activeSlideIdx, setActiveSlideIdx] = useState<number>(0);
+  const [isClassEnded, setIsClassEnded] = useState<boolean>(false);
   const activeSlideIdxRef = useRef<number>(activeSlideIdx);
   useEffect(() => {
     activeSlideIdxRef.current = activeSlideIdx;
@@ -561,6 +562,7 @@ export default function CoursePage({
     setIsPlayingClass(false);
     setIsTTSLoading(false);
     setIsSlideSelectorOpen(false);
+    setIsClassEnded(false);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -590,7 +592,9 @@ export default function CoursePage({
       let url = slide.audioUrl;
 
       if (!url) {
-        console.log("No pregenerated audioUrl found. Falling back to real-time TTS synthesis.");
+        console.log(
+          "No pregenerated audioUrl found. Falling back to real-time TTS synthesis.",
+        );
         const response = await fetch("/api/aethex/tts", {
           method: "POST",
           headers: {
@@ -616,14 +620,32 @@ export default function CoursePage({
       audioRef.current = audio;
 
       audio.onended = () => {
+        console.log(`[page.tsx] Audio for slide ${activeSlideIdxRef.current} ended.`);
         // Auto advance slide if not last
         if (activeSlideIdxRef.current < activeSection.slides.length - 1) {
           const nextIdx = activeSlideIdxRef.current + 1;
+          console.log(`[page.tsx] Auto-advancing to slide ${nextIdx}`);
           setActiveSlideIdx(nextIdx);
           playSlideAudio(activeSection.slides[nextIdx]);
+        } else {
+          // Finished whole section
+          console.log("[page.tsx] Reached end of section. Marking as completed.");
+          setIsClassEnded(true);
+          setSections((prev) =>
+            prev.map((sec) =>
+              sec.id === activeSection.id ? { ...sec, completed: true } : sec,
+            ),
+          );
+          if (isLiveCourse) {
+            console.log("[page.tsx] Syncing completion to backend...");
+            void updateModuleProgress(courseId, activeSection.id, true).catch(
+              () => {},
+            );
+          }
         }
       };
 
+      console.log(`[page.tsx] Playing audio for slide ${activeSlideIdxRef.current}`);
       audio.play().catch((err) => {
         console.error("Audio autoplay error:", err);
         setTtsFallback(true);
@@ -638,6 +660,7 @@ export default function CoursePage({
 
   const startFullClassroom = async () => {
     setIsPlayingClass(true);
+    setIsClassEnded(false);
     setActiveSlideIdx(0);
     // Start speaking slide 1 immediately
     await playSlideAudio(activeSection.slides[0]);
@@ -848,7 +871,6 @@ export default function CoursePage({
           )}
         </div>
 
-        {/* Progress Bar Widget - FLAT */}
         <div className="w-full md:w-80 flex flex-col gap-2">
           <div className="flex justify-between text-sm">
             <span className="font-semibold text-neutral-700">
@@ -977,7 +999,6 @@ export default function CoursePage({
                   {activeSection.slides.length} Slides
                 </div>
               </div>
-              {/* Primary launcher button - FLAT */}
               <button
                 onClick={startFullClassroom}
                 className="inline-flex items-center gap-2 bg-primary hover:bg-primary-600 text-white font-medium text-sm px-5 py-2 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer"
@@ -986,7 +1007,7 @@ export default function CoursePage({
                 <ArrowRightIcon weight="bold" size={16} />
               </button>
             </div>
-            <div className="bg-neutral-950 border border-neutral-200/60 border-t-0 aspect-video rounded-3xl rounded-t-none relative overflow-hidden flex flex-col justify-between text-white shadow-inner">
+            <div className="bg-neutral-950 aspect-video rounded-3xl rounded-t-none relative overflow-hidden flex flex-col justify-between text-white">
               <div className="absolute inset-0 z-0">
                 <CourseThumbnail title={courseTitle} hideContent />
                 <div className="absolute inset-0 bg-black/10 mix-blend-multiply" />
@@ -1077,7 +1098,6 @@ export default function CoursePage({
         </div>
       </div>
 
-      {/* FULLSCREEN IMMERSIVE CLASSROOM VIEW OVERLAY */}
       <AnimatePresence>
         {isPlayingClass && (
           <motion.div
@@ -1087,10 +1107,8 @@ export default function CoursePage({
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 bg-neutral-50 text-neutral-900 flex flex-col p-6 md:p-8 select-none"
           >
-            {/* 1. Header Toolbar */}
             <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
               <div className="flex items-center gap-4">
-                {/* Exit Classroom button */}
                 <button
                   onClick={closeAudioClass}
                   className="inline-flex items-center py-4 px-4 bg-white hover:bg-neutral-100 text-sm font-bold text-neutral-500 hover:text-neutral-800 rounded-xl transition-all cursor-pointer border border-neutral-200/60"
@@ -1107,7 +1125,6 @@ export default function CoursePage({
                 </div>
               </div>
 
-              {/* Slide Grid Selector */}
               <button
                 onClick={() => setIsSlideSelectorOpen((prev) => !prev)}
                 className={`p-3 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center border border-neutral-200/60 ${
@@ -1121,9 +1138,7 @@ export default function CoursePage({
               </button>
             </div>
 
-            {/* 2. Main split lecture screen */}
             <div className="grow grid grid-cols-1 lg:grid-cols-12 gap-5 my-6 overflow-hidden min-h-0 relative">
-              {/* Slide Deck Visual Grid Overlay */}
               <AnimatePresence>
                 {isSlideSelectorOpen && (
                   <motion.div
@@ -1134,8 +1149,12 @@ export default function CoursePage({
                     className="absolute inset-0 z-30 bg-neutral-50/95 backdrop-blur-md border border-neutral-200/60 rounded-2xl p-6 md:p-8 overflow-y-auto flex flex-col text-neutral-900"
                   >
                     <div className="mb-6">
-                      <h3 className="text-xl font-bold text-neutral-900">Slide Deck Preview</h3>
-                      <p className="text-xs text-neutral-500 mt-1">Select a slide to jump directly to it.</p>
+                      <h3 className="text-xl font-bold text-neutral-900">
+                        Slide Deck Preview
+                      </h3>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        Select a slide to jump directly to it.
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1151,17 +1170,18 @@ export default function CoursePage({
                                 playSlideAudio(slide);
                               }
                             }}
-                            className={`group border rounded-2xl h-24 flex flex-col justify-center cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden select-none ${
-                              isCurrent
-                                ? "border-white ring-2 ring-white"
-                                : "border-neutral-200/30 hover:border-white/60"
+                            className={`group rounded-2xl h-24 flex flex-col justify-center cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative overflow-hidden select-none ${
+                              isCurrent ? "ring-2 ring-white" : ""
                             }`}
                           >
                             <div className="absolute inset-0 z-0 opacity-80 group-hover:opacity-100 transition-opacity">
-                              <CourseThumbnail title={courseTitle} hideContent />
+                              <CourseThumbnail
+                                title={courseTitle}
+                                hideContent
+                              />
                               <div className="absolute inset-0 bg-black/20 mix-blend-multiply" />
                             </div>
-                            
+
                             {/* Slide Number Badge */}
                             <span className="absolute top-3 right-3 z-20 font-mono text-[10px] font-bold text-white bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full border border-white/20">
                               {String(idx + 1).padStart(2, "0")}
@@ -1179,7 +1199,6 @@ export default function CoursePage({
                   </motion.div>
                 )}
               </AnimatePresence>
-              {/* Voice question recorder */}
               <CourseTutorPanel
                 isOpen={isQuestionPanelOpen}
                 onToggle={() => setIsQuestionPanelOpen((prev) => !prev)}
@@ -1188,16 +1207,32 @@ export default function CoursePage({
                 onSubmitQuestion={submitQuestion}
                 draft={questionDraft}
                 onDraftChange={setQuestionDraft}
-                tutorMessage={activeQuestionThread[activeQuestionThread.length - 1]?.role === "assistant" ? activeQuestionThread[activeQuestionThread.length - 1] : undefined}
+                tutorMessage={
+                  activeQuestionThread[activeQuestionThread.length - 1]
+                    ?.role === "assistant"
+                    ? activeQuestionThread[activeQuestionThread.length - 1]
+                    : undefined
+                }
                 onRecordingStateChange={(isRecording) => {
                   if (isRecording) {
                     audioRef.current?.pause();
-                  } else if (!isAnsweringQuestion && audioRef.current?.paused) {
+                  } else if (
+                    !isAnsweringQuestion &&
+                    audioRef.current?.paused &&
+                    !audioRef.current?.ended &&
+                    !isClassEnded
+                  ) {
                     audioRef.current?.play().catch(() => setTtsFallback(true));
                   }
                 }}
                 onTutorAudioPlayStateChange={(isPlaying) => {
-                  if (!isPlaying && !isAnsweringQuestion && audioRef.current?.paused) {
+                  if (
+                    !isPlaying &&
+                    !isAnsweringQuestion &&
+                    audioRef.current?.paused &&
+                    !audioRef.current?.ended &&
+                    !isClassEnded
+                  ) {
                     audioRef.current?.play().catch(() => setTtsFallback(true));
                   } else if (isPlaying) {
                     audioRef.current?.pause();
@@ -1205,47 +1240,108 @@ export default function CoursePage({
                 }}
               />
 
-              <div className="bg-neutral-950 border border-neutral-200/60 rounded-2xl flex flex-col h-full lg:col-span-12 text-white relative overflow-hidden shadow-inner">
-                <div className="absolute inset-0 z-0">
-                  <CourseThumbnail title={courseTitle} hideContent />
-                  <div className="absolute inset-0 bg-black/10 mix-blend-multiply" />
-                </div>
-                <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full my-auto z-10 p-8 md:p-12 relative overflow-y-auto">
-                  <h2 className="text-3xl md:text-4xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
-                    {activeSlide.title}
-                  </h2>
-
-                  <div className="h-0.5 w-16 bg-white/40 mt-2" />
-
-                  <div className="flex flex-col gap-4 mt-6">
-                    {activeSlide.points.map((pt, idx) => (
-                      <div key={idx} className="flex items-start gap-4">
-                        <span className="text-white/80 font-bold text-xl mt-1">
-                          •
-                        </span>
-                        <p className="text-base md:text-lg text-white/95 leading-relaxed font-medium drop-shadow-sm">
-                          {pt}
-                        </p>
-                      </div>
-                    ))}
+              <div className="lg:col-span-12 flex items-center justify-center w-full h-full min-h-0">
+                <div className="bg-neutral-950 rounded-4xl flex flex-col w-full max-w-7xl aspect-video text-white relative overflow-hidden">
+                  <div className="absolute inset-0 z-0">
+                    <CourseThumbnail title={courseTitle} hideContent />
+                    <div className="absolute inset-0 bg-black/10 mix-blend-multiply" />
                   </div>
-                </div>
-                <div className="flex items-center mx-auto gap-2 text-sm text-neutral-400 font-mono font-semibold pb-8 z-10">
-                  <button
-                    className="p-2 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm border border-white/10 transition-colors cursor-pointer"
-                    onClick={handlePrevSlide}
-                  >
-                    <CaretLeftIcon size={14} weight="bold" />
-                  </button>
-                  <span className="px-2 text-white drop-shadow-md">
-                    {activeSlideIdx + 1} / {activeSection.slides.length}
-                  </span>
-                  <button
-                    className="p-2 rounded-full bg-black/20 text-white hover:bg-black/40 backdrop-blur-sm border border-white/10 transition-colors cursor-pointer"
-                    onClick={handleNextSlide}
-                  >
-                    <CaretRightIcon size={14} weight="bold" />
-                  </button>
+                  {isClassEnded ? (
+                    <div className="flex flex-col gap-6 max-w-xl mx-auto w-full my-auto z-10 p-8 md:p-12 relative items-center text-center">
+                      <div className="h-20 w-20 bg-white/20 rounded-full flex items-center justify-center mb-4 backdrop-blur-md border border-white/10">
+                        <CheckCircleIcon
+                          weight="fill"
+                          className="text-white w-10 h-10 drop-shadow-md"
+                        />
+                      </div>
+                      <h2 className="text-4xl md:text-5xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
+                        Class Completed
+                      </h2>
+                      <p className="text-lg text-white/80 font-medium drop-shadow-sm">
+                        You've finished the lesson on {activeSection.title}.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                        <button
+                          onClick={closeAudioClass}
+                          className="px-6 py-3 rounded-full bg-white text-neutral-900 font-bold hover:bg-neutral-200 transition-colors shadow-lg"
+                        >
+                          Return to Course
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsClassEnded(false);
+                            setActiveSlideIdx(0);
+                            playSlideAudio(activeSection.slides[0]);
+                          }}
+                          className="px-6 py-3 rounded-full bg-black/30 border border-white/20 text-white font-bold hover:bg-black/50 transition-colors shadow-lg backdrop-blur-md"
+                        >
+                          Retake Lesson
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full my-auto z-10 p-8 md:p-12 pb-24 relative overflow-y-auto">
+                        <h2 className="text-3xl md:text-4xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
+                          {activeSlide.title}
+                        </h2>
+
+                        <div className="h-0.5 w-16 bg-white/40 mt-2" />
+
+                        <div className="flex flex-col gap-4 mt-6">
+                          {activeSlide.points.map((pt, idx) => (
+                            <div key={idx} className="flex items-start gap-4">
+                              <span className="text-white/80 font-bold text-xl mt-1">
+                                •
+                              </span>
+                              <p className="text-base md:text-lg text-white/95 leading-relaxed font-medium drop-shadow-sm">
+                                {pt}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-sm text-neutral-400 font-mono font-semibold z-20">
+                        <button
+                          className="p-2 rounded-full text-white hover:bg-black/50 backdrop-blur-md transition-colors cursor-pointer"
+                          onClick={handlePrevSlide}
+                        >
+                          <CaretLeftIcon size={14} weight="bold" />
+                        </button>
+                        <span className="px-3 py-1 bg-black/30 rounded-full text-white backdrop-blur-md">
+                          {activeSlideIdx + 1} / {activeSection.slides.length}
+                        </span>
+                        {activeSlideIdx === activeSection.slides.length - 1 ? (
+                          <button
+                            className="px-4 py-1.5 rounded-full text-white hover:bg-black/50 backdrop-blur-md transition-colors cursor-pointer text-xs font-bold uppercase tracking-wider ml-1"
+                            onClick={() => {
+                              if (audioRef.current) {
+                                audioRef.current.pause();
+                              }
+                              setIsClassEnded(true);
+                              setSections((prev) =>
+                                prev.map((sec) =>
+                                  sec.id === activeSection.id ? { ...sec, completed: true } : sec,
+                                ),
+                              );
+                              if (isLiveCourse) {
+                                void updateModuleProgress(courseId, activeSection.id, true).catch(() => {});
+                              }
+                            }}
+                          >
+                            End Class
+                          </button>
+                        ) : (
+                          <button
+                            className="p-2 rounded-full text-white hover:bg-black/50 backdrop-blur-md transition-colors cursor-pointer"
+                            onClick={handleNextSlide}
+                          >
+                            <CaretRightIcon size={14} weight="bold" />
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

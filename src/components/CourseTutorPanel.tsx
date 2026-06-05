@@ -190,21 +190,36 @@ export default function CourseTutorPanel({
   const [speechSupported, setSpeechSupported] = useState(true);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [interimTranscript, setInterimTranscript] = useState("");
+  const [isAwake, setIsAwake] = useState(false);
+  const isAwakeRef = useRef(isAwake);
+
+  const isOpenRef = useRef(isOpen);
+  const onToggleRef = useRef(onToggle);
+  const onSubmitQuestionRef = useRef(onSubmitQuestion);
+  const onDraftChangeRef = useRef(onDraftChange);
+  const onRecordingStateChangeRef = useRef(onRecordingStateChange);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    onToggleRef.current = onToggle;
+    onSubmitQuestionRef.current = onSubmitQuestion;
+    onDraftChangeRef.current = onDraftChange;
+    onRecordingStateChangeRef.current = onRecordingStateChange;
+  });
 
   useEffect(() => {
     isAnsweringRef.current = isAnswering;
-  }, [isAnswering]);
+    if (isAnswering && isAwake) {
+      setIsAwake(false);
+    }
+  }, [isAnswering, isAwake]);
 
   useEffect(() => {
-    onRecordingStateChange?.(isRecording);
-  }, [isRecording, onRecordingStateChange]);
+    isAwakeRef.current = isAwake;
+    onRecordingStateChangeRef.current?.(isAwake);
+  }, [isAwake]);
 
   const transcript = `${draft}${interimTranscript ? ` ${interimTranscript}` : ""}`.trim();
-  const canAsk = Boolean(draft.trim()) && !isAnswering;
-
-  useEffect(() => {
-    draftRef.current = draft;
-  }, [draft]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -219,18 +234,37 @@ export default function CourseTutorPanel({
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
+    let shouldRestart = true;
     recognition.onstart = () => {
+      console.log("[CourseTutorPanel] SpeechRecognition started. isAwake:", isAwakeRef.current);
       setIsRecording(true);
       setSpeechError(null);
+      shouldRestart = true;
     };
-    recognition.onend = () => setIsRecording(false);
-    recognition.onerror = (event) => {
+    recognition.onend = () => {
+      console.log("[CourseTutorPanel] SpeechRecognition ended. Restarting if not answering...");
       setIsRecording(false);
-      setSpeechError(
-        event.error === "not-allowed"
-          ? "Microphone access is blocked."
-          : "I couldn't hear that clearly.",
-      );
+      if (!isAnsweringRef.current && shouldRestart) {
+        try { 
+          recognition.start(); 
+          console.log("[CourseTutorPanel] Successfully auto-restarted SpeechRecognition.");
+        } catch (err) {
+          console.error("[CourseTutorPanel] Failed to auto-restart SpeechRecognition:", err);
+        }
+      } else {
+        console.log(`[CourseTutorPanel] Did not restart. isAnswering: ${isAnsweringRef.current}, shouldRestart: ${shouldRestart}`);
+      }
+      shouldRestart = true;
+    };
+    recognition.onerror = (event) => {
+      console.warn("[CourseTutorPanel] SpeechRecognition error:", event.error);
+      if (["not-allowed", "audio-capture", "not-supported"].includes(event.error)) {
+        shouldRestart = false;
+        setSpeechError(event.error === "not-allowed" ? "Microphone access is blocked." : `Microphone error: ${event.error}`);
+        setIsRecording(false);
+      } else if (event.error === "aborted") {
+        console.log("[CourseTutorPanel] Speech recognition aborted. Will attempt restart.");
+      }
     };
     recognition.onresult = (event) => {
       let finalText = "";
@@ -246,40 +280,80 @@ export default function CourseTutorPanel({
         }
       }
 
-      if (finalText.trim()) {
-        onDraftChange(`${draftRef.current} ${finalText}`.trim());
-      }
-      setInterimTranscript(interimText.trim());
+      console.log(`[CourseTutorPanel] Transcribed - Final: "${finalText}" | Interim: "${interimText}" | isAwake: ${isAwakeRef.current}`);
 
-      // Silence detection logic
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = setTimeout(() => {
-        if (!isAnsweringRef.current) {
-          recognitionRef.current?.stop();
-          setInterimTranscript("");
-          // Note: using draftRef because draft might be stale
-          const finalDraft = `${draftRef.current} ${finalText}`.trim();
-          if (finalDraft) {
-            onSubmitQuestion(finalDraft);
-          }
+      if (!isAwakeRef.current) {
+        const lowerText = (finalText || interimText).toLowerCase();
+        if (lowerText.includes("question") || lowerText.includes("grasp") || lowerText.includes("wait")) {
+          console.log("[CourseTutorPanel] Wake word detected in text:", lowerText);
+          setIsAwake(true);
+          onDraftChangeRef.current("");
+          if (!isOpenRef.current) onToggleRef.current();
         }
-      }, 2000);
+      } else {
+        if (finalText.trim()) {
+          const newDraft = `${draftRef.current} ${finalText}`.trim();
+          console.log("[CourseTutorPanel] Appending final text to draft:", newDraft);
+          onDraftChangeRef.current(newDraft);
+        }
+        setInterimTranscript(interimText.trim());
+
+        // Silence detection logic
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        console.log("[CourseTutorPanel] Silence timer reset. Waiting 2s...");
+        silenceTimerRef.current = setTimeout(() => {
+          console.log("[CourseTutorPanel] Silence timer fired! 2 seconds passed.");
+          if (!isAnsweringRef.current) {
+            setInterimTranscript("");
+            const finalDraft = `${draftRef.current} ${finalText}`.trim();
+            if (finalDraft) {
+              console.log("[CourseTutorPanel] Submitting voice question:", finalDraft);
+              onSubmitQuestionRef.current(finalDraft);
+              setIsAwake(false);
+            } else {
+               console.log("[CourseTutorPanel] Draft is empty, going back to sleep.");
+               setIsAwake(false);
+            }
+          }
+        }, 2000);
+      }
     };
 
     recognitionRef.current = recognition;
+    
+    // Auto-start on mount
+    console.log("[CourseTutorPanel] Mounting SpeechRecognition...");
+    try { 
+      recognition.start(); 
+      console.log("[CourseTutorPanel] Auto-started successfully.");
+    } catch (err) {
+      console.error("[CourseTutorPanel] Auto-start failed on mount:", err);
+    }
 
     return () => {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       recognition.abort();
       recognitionRef.current = null;
     };
-  }, [onDraftChange]);
+  }, []);
 
-  useEffect(() => {
-    if (!isOpen && isRecording) {
-      recognitionRef.current?.stop();
+  const toggleMic = () => {
+    if (!speechSupported) return;
+    if (isAwake) {
+      setIsAwake(false);
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (draft.trim()) {
+        onSubmitQuestion(draft.trim());
+        setInterimTranscript("");
+      }
+    } else {
+      setIsAwake(true);
+      onDraftChange("");
+      if (!isRecording) {
+        try { recognitionRef.current?.start() } catch {}
+      }
     }
-  }, [isOpen, isRecording]);
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -305,19 +379,6 @@ export default function CourseTutorPanel({
 
     setInterimTranscript("");
     recognitionRef.current?.start();
-  };
-
-  const submitVoiceQuestion = () => {
-    if (!canAsk) return;
-    recognitionRef.current?.stop();
-    setInterimTranscript("");
-    onSubmitQuestion(draft);
-  };
-
-  const askSuggestion = (question: string) => {
-    recognitionRef.current?.stop();
-    setInterimTranscript("");
-    onSubmitQuestion(question);
   };
 
   return (
@@ -361,17 +422,41 @@ export default function CourseTutorPanel({
               <div className="space-y-4 px-4 py-4">
                 <div className="rounded-3xl border border-neutral-100 bg-neutral-50 px-4 py-5 text-center">
                   <button
-                    type="button"
-                    onClick={toggleRecording}
-                    disabled={isAnswering}
-                    aria-pressed={isRecording}
-                    aria-label={isRecording ? "Stop recording" : "Start recording"}
-                    className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 transition-transform duration-150 ease-out hover:scale-[1.03] hover:bg-primary-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:scale-100"
+                    onClick={toggleMic}
+                    className={`flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 shadow-xl border cursor-pointer mx-auto ${
+                      isAwake
+                        ? "bg-danger-500 text-white hover:bg-danger-600 border-danger-400"
+                        : "bg-white text-neutral-900 hover:bg-neutral-100 border-neutral-200/60"
+                    } ${!speechSupported && "opacity-50 cursor-not-allowed"}`}
+                    disabled={!speechSupported}
+                    title={
+                      !speechSupported
+                        ? "Speech recognition not supported"
+                        : isAwake
+                          ? "Click to submit"
+                          : "Start asking"
+                    }
                   >
-                    {isRecording ? (
-                      <StopIcon size={28} weight="fill" />
+                    {isAwake ? (
+                      <div className="flex gap-1 items-center">
+                        <motion.div
+                          animate={{ height: ["8px", "16px", "8px"] }}
+                          transition={{ repeat: Infinity, duration: 1 }}
+                          className="w-1.5 bg-white rounded-full"
+                        />
+                        <motion.div
+                          animate={{ height: ["12px", "20px", "12px"] }}
+                          transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}
+                          className="w-1.5 bg-white rounded-full"
+                        />
+                        <motion.div
+                          animate={{ height: ["8px", "16px", "8px"] }}
+                          transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}
+                          className="w-1.5 bg-white rounded-full"
+                        />
+                      </div>
                     ) : (
-                      <MicrophoneIcon size={30} weight="fill" />
+                      <MicrophoneIcon size={24} weight="fill" />
                     )}
                   </button>
 
@@ -396,8 +481,14 @@ export default function CourseTutorPanel({
                   </p>
                 </div>
 
+                {!isAwake && isRecording && (
+                  <p className="text-center text-[10px] uppercase font-bold tracking-widest text-neutral-400 mt-2">
+                    Listening for "I have a question"...
+                  </p>
+                )}
+
                 {speechError && (
-                  <p className="rounded-2xl border border-danger-500/20 bg-danger-500/10 px-4 py-3 text-sm text-danger-600">
+                  <p className="rounded-2xl border border-danger-500/20 bg-danger-500/10 px-4 py-3 text-sm text-danger-600 mt-2">
                     {speechError}
                   </p>
                 )}
