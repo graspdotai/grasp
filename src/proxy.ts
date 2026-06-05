@@ -32,7 +32,7 @@ function redirect(request: NextRequest, pathname: string) {
   return NextResponse.redirect(redirectUrl);
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (!hasSupabaseConfig()) {
     return NextResponse.next();
   }

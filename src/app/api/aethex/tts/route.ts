@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
         text,
         language,
         streaming,
+        voice_id: "8466fb57-9f6b-53ad-ba5a-9729617f761c",
       }),
     });
 
