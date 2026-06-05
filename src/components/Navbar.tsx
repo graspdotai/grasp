@@ -6,17 +6,14 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { resolveDisplayName } from "@/lib/profileDisplay";
 import { getLocalUserId } from "@/lib/userSession";
-import { signOut } from "@/lib/auth";
-import { useRouter } from "next/navigation";
-import { useProfile } from "@/hooks/useProfile";
 import {
   CaretDownIcon,
   GearIcon,
   GraduationCapIcon,
-  SignOutIcon,
   UserIcon,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function Navbar() {
   const userId = getLocalUserId();
@@ -24,8 +21,6 @@ export default function Navbar() {
   const [profile, setProfile] = useState<UserAvatarProfile | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-
   useEffect(() => {
     if (!profileRow) {
       if (!userId) setProfile(null);
@@ -57,12 +52,6 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  async function handleSignOut() {
-    setIsOpen(false);
-    await signOut();
-    router.push("/signin");
-  }
 
   return (
     <nav className="w-full py-2 flex items-center justify-between">
@@ -103,31 +92,51 @@ export default function Navbar() {
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-lg border border-neutral-100 py-2 z-50"
                 >
-                  <Link
-                    href="/profile"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-                  >
-                    <UserIcon size={16} />
-                    Profile
-                  </Link>
-                  <Link
-                    href="/settings"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-                  >
-                    <GearIcon size={16} />
-                    Settings
-                  </Link>
-                  <div className="my-1 border-t border-neutral-100" />
-                  <button
-                    type="button"
-                    onClick={() => void handleSignOut()}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <SignOutIcon size={16} />
-                    Sign out
-                  </button>
+                  {/* User Profile Header */}
+                  <div className="px-4 py-2 border-b border-neutral-100">
+                    <p className="text-sm font-semibold text-neutral-800 truncate">
+                      {displayName}
+                    </p>
+                    {profile.email && profile.email !== displayName && (
+                      <p className="text-xs text-neutral-400 truncate mt-0.5" title={profile.email}>
+                        {profile.email}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Menu items */}
+                  <div className="p-1.5 flex flex-col gap-0.5">
+                    <Link
+                      href="/"
+                      className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-600 rounded-xl hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <GraduationCapIcon
+                        size={16}
+                        className="text-neutral-400"
+                      />
+                      <span>My Courses</span>
+                    </Link>
+
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-600 rounded-xl hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <UserIcon size={16} className="text-neutral-400" />
+                      <span>Profile</span>
+                    </Link>
+
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-neutral-600 rounded-xl hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <GearIcon size={16} className="text-neutral-400" />
+                      <span>Settings</span>
+                    </Link>
+
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
