@@ -586,8 +586,9 @@ export default function CoursePage({
             href={`/course/${courseId}/settings`}
             className="inline-flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900"
           >
-            <GearIcon size={16} weight="bold" />
-            Settings
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500">
+              <GearIcon size={16} weight="bold" />
+            </div>
           </Link>
         )}
       </div>
