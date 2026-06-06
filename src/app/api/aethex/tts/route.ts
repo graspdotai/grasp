@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
     const {
       text,
       language = "english",
-      voice_id = "default",
+      voice_id = "8466fb57-9f6b-53ad-ba5a-9729617f761c",
       streaming = false,
     } = await req.json();
 
@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
     });
     const timestamp = new Date().toISOString();
     const endpoint = `${BASE_URL}/tts`;
-    const xRequestId = aethexResponse.headers.get("x-request-id") || aethexResponse.headers.get("x-correlation-id") || "Not Found";
+    const xRequestId =
+      aethexResponse.headers.get("x-request-id") ||
+      aethexResponse.headers.get("x-correlation-id") ||
+      "Not Found";
 
     console.log("\n================ AETHEX REQUEST LOG ================");
     console.log(`Timestamp:    ${timestamp}`);

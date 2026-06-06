@@ -23,7 +23,7 @@ export async function POST() {
       name: "First Capital Support",
       system_prompt: "...",
       first_message: "Hi, thanks for calling...",
-      voice_id: voice.id,
+      voice_id: "8466fb57-9f6b-53ad-ba5a-9729617f761c",
       language: "english",
     }),
   });

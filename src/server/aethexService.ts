@@ -1,6 +1,6 @@
 export async function generateAethexTts(
   text: string,
-  language: string = "english"
+  language: string = "english",
 ): Promise<Buffer> {
   const apiKey = process.env.AETHEX_API_KEY;
   if (!apiKey) {
@@ -18,6 +18,7 @@ export async function generateAethexTts(
       text,
       language,
       streaming: false,
+      voice_id: "8466fb57-9f6b-53ad-ba5a-9729617f761c",
     }),
   });
 
@@ -27,7 +28,10 @@ export async function generateAethexTts(
   });
   const timestamp = new Date().toISOString();
   const endpoint = `${BASE_URL}/tts`;
-  const xRequestId = response.headers.get("x-request-id") || response.headers.get("x-correlation-id") || "Not Found";
+  const xRequestId =
+    response.headers.get("x-request-id") ||
+    response.headers.get("x-correlation-id") ||
+    "Not Found";
 
   console.log("\n================ AETHEX SERVICE REQUEST LOG ================");
   console.log(`Timestamp:    ${timestamp}`);
