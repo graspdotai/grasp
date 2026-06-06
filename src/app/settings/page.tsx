@@ -16,6 +16,10 @@ import {
 import { deleteAccount, signOut } from "@/lib/auth";
 import { resolveDisplayName } from "@/lib/profileDisplay";
 import { getLocalUserEmail, getLocalUserId } from "@/lib/userSession";
+import SuccessModal from "@/components/modals/SuccessModal";
+import DeleteAccountModal from "@/components/modals/DeleteAccountModal";
+import SignOutModal from "@/components/modals/SignOutModal";
+
 export default function SettingsPage() {
   const router = useRouter();
   const userId = getLocalUserId();
@@ -26,11 +30,11 @@ export default function SettingsPage() {
   const [avatarVariant, setAvatarVariant] = useState<AvatarVariant>("marble");
   const [formInitialized, setFormInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (!profile || formInitialized) return;
@@ -44,7 +48,7 @@ export default function SettingsPage() {
     if (!userId) return;
 
     setIsSaving(true);
-    setSaveMessage(null);
+    setSaveError(null);
 
     try {
       const res = await fetch("/api/profile", {
@@ -63,38 +67,17 @@ export default function SettingsPage() {
       }
 
       invalidateProfile();
-      setSaveMessage("Saved");
+      setShowSaveSuccess(true);
     } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Could not save");
+      setSaveError(err instanceof Error ? err.message : "Could not save");
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDeleteAccount() {
-    if (deleteConfirm !== "DELETE") {
-      setDeleteError('Type DELETE to confirm.');
-      return;
-    }
-
-    if (
-      !window.confirm(
-        "Permanently delete your account and all courses? This cannot be undone.",
-      )
-    ) {
-      return;
-    }
-
-    setIsDeletingAccount(true);
-    setDeleteError(null);
-
-    try {
-      await deleteAccount();
-      router.push("/signin");
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Could not delete account");
-      setIsDeletingAccount(false);
-    }
+    await deleteAccount();
+    router.push("/signin");
   }
 
   async function handleSignOut() {
@@ -120,8 +103,8 @@ export default function SettingsPage() {
   });
 
   return (
-    <main className="min-h-screen bg-neutral-50">
-      <div className="max-w-3xl mx-auto px-5 py-5 sm:px-8 sm:py-6">
+    <main className="min-h-screen bg-neutral-50 ">
+      <div className="p-6 max-w-7xl mx-auto">
         <Navbar />
 
         <Link
@@ -213,12 +196,8 @@ export default function SettingsPage() {
                   >
                     {isSaving ? "Saving…" : "Save profile"}
                   </button>
-                  {saveMessage && (
-                    <span
-                      className={`text-sm ${saveMessage === "Saved" ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {saveMessage}
-                    </span>
+                  {saveError && (
+                    <span className="text-sm text-red-600">{saveError}</span>
                   )}
                 </div>
               </form>
@@ -251,47 +230,51 @@ export default function SettingsPage() {
             <h2 className="text-sm font-semibold text-neutral-800 mb-4">Session</h2>
             <button
               type="button"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-              className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
+              onClick={() => setShowSignOutModal(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
             >
               <SignOutIcon size={18} />
-              {isSigningOut ? "Signing out…" : "Sign out"}
+              Sign out
             </button>
           </section>
 
           {userId && (
-            <section className="bg-white rounded-3xl border border-red-100 p-6">
-              <h2 className="text-sm font-semibold text-red-700 mb-2">Delete account</h2>
-              <p className="text-sm text-neutral-600 mb-4">
+            <section className="bg-white rounded-3xl border border-danger-100 p-6">
+              <h2 className="text-sm font-semibold text-danger-700 mb-2">Delete account</h2>
+              <p className="text-sm text-neutral-500 mb-4">
                 Removes your profile, all courses, and your sign-in. This cannot be undone.
               </p>
-              <label htmlFor="deleteConfirm" className="text-xs font-medium text-neutral-600">
-                Type <span className="font-mono font-semibold">DELETE</span> to confirm
-              </label>
-              <input
-                id="deleteConfirm"
-                type="text"
-                value={deleteConfirm}
-                onChange={(e) => setDeleteConfirm(e.target.value)}
-                className="mt-1.5 h-10 w-full max-w-xs rounded-xl border border-neutral-200 px-3 text-sm font-mono"
-                autoComplete="off"
-              />
-              {deleteError && (
-                <p className="text-sm text-red-600 mt-2">{deleteError}</p>
-              )}
               <button
                 type="button"
-                onClick={handleDeleteAccount}
-                disabled={isDeletingAccount || deleteConfirm !== "DELETE"}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                onClick={() => setShowDeleteModal(true)}
+                className="rounded-xl bg-danger-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-danger-700"
               >
-                {isDeletingAccount ? "Deleting account…" : "Delete my account"}
+                Delete my account
               </button>
             </section>
           )}
         </div>
       </div>
+
+      <SuccessModal
+        open={showSaveSuccess}
+        onClose={() => setShowSaveSuccess(false)}
+        title="Profile saved"
+        description="Your name and avatar have been updated."
+      />
+
+      <SignOutModal
+        open={showSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
+        onConfirm={handleSignOut}
+        isLoading={isSigningOut}
+      />
+
+      <DeleteAccountModal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onDelete={handleDeleteAccount}
+      />
     </main>
   );
 }
