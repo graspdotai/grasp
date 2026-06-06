@@ -25,7 +25,7 @@ import {
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionReferenceLinks from "@/components/SectionReferenceLinks";
-import SlideContent from "@/components/SlideContent";
+import SlideContent, { MathText } from "@/components/SlideContent";
 import {
   isUuid,
   onboardingLanguageToTts,
@@ -330,6 +330,16 @@ export default function CoursePage({
     setIsPlayingClass(false);
     setIsTTSLoading(false);
     setIsSlideSelectorOpen(false);
+    
+    // Move user to the next section if they just completed one
+    if (isClassEnded) {
+      const currentIndex = sections.findIndex((s) => s.id === activeSectionId);
+      if (currentIndex !== -1 && currentIndex < sections.length - 1) {
+        setActiveSectionId(sections[currentIndex + 1].id);
+        setActiveSlideIdx(0);
+      }
+    }
+
     setIsClassEnded(false);
     if (audioRef.current) {
       audioRef.current.pause();
@@ -868,7 +878,7 @@ export default function CoursePage({
                         weight="fill"
                         className="text-primary mt-0.5 shrink-0"
                       />
-                      <span>{point}</span>
+                      <MathText text={point} />
                     </li>
                   ))}
                 </ul>

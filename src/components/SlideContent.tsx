@@ -9,7 +9,7 @@ import type { SlideLayout } from "@/lib/courseApi";
 // ─────────────────────────────────────────────────────────────
 // Math text renderer — parses $...$ inline and $$...$$ block
 // ─────────────────────────────────────────────────────────────
-function MathText({ text, className }: { text: string; className?: string }) {
+export function MathText({ text, className }: { text: string; className?: string }) {
   const parts: Array<{ type: "text" | "inline" | "block"; content: string }> =
     [];
   let i = 0;
