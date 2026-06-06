@@ -20,6 +20,8 @@ import {
   ArrowRightIcon,
   GearIcon,
   SquaresFourIcon,
+  CornersInIcon,
+  CornersOutIcon,
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionReferenceLinks from "@/components/SectionReferenceLinks";
@@ -60,6 +62,30 @@ export default function CoursePage({
   useEffect(() => {
     activeSlideIdxRef.current = activeSlideIdx;
   }, [activeSlideIdx]);
+
+  const [isClassroomFullscreen, setIsClassroomFullscreen] = useState<boolean>(false);
+  const classroomSlideRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsClassroomFullscreen(document.fullscreenElement === classroomSlideRef.current);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleClassroomFullscreen = () => {
+    if (!classroomSlideRef.current) return;
+    if (!document.fullscreenElement) {
+      classroomSlideRef.current.requestFullscreen().catch((err) => {
+        console.error("Error attempting to enable full-screen mode:", err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   const [isPlayingClass, setIsPlayingClass] = useState<boolean>(false);
   const [language, setLanguage] = useState<string>("english");
@@ -359,6 +385,7 @@ export default function CoursePage({
       audioRef.current = audio;
 
       audio.onended = () => {
+        if (!activeSection?.slides) return;
         console.log(
           `[page.tsx] Audio for slide ${activeSlideIdxRef.current} ended.`,
         );
@@ -404,6 +431,7 @@ export default function CoursePage({
   };
 
   const startFullClassroom = async () => {
+    if (!activeSection?.slides?.length) return;
     setIsPlayingClass(true);
     setIsClassEnded(false);
     setActiveSlideIdx(0);
@@ -412,6 +440,7 @@ export default function CoursePage({
   };
 
   const handlePrevSlide = () => {
+    if (!activeSection?.slides) return;
     if (activeSlideIdx > 0) {
       const nextIdx = activeSlideIdx - 1;
       setActiveSlideIdx(nextIdx);
@@ -422,6 +451,7 @@ export default function CoursePage({
   };
 
   const handleNextSlide = () => {
+    if (!activeSection?.slides) return;
     if (activeSlideIdx < activeSection.slides.length - 1) {
       const nextIdx = activeSlideIdx + 1;
       setActiveSlideIdx(nextIdx);
@@ -434,7 +464,7 @@ export default function CoursePage({
   // Re-trigger audio if user switches languages while in classroom
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
-    if (isPlayingClass) {
+    if (isPlayingClass && activeSection?.slides?.[activeSlideIdx]) {
       // Re-synthesize current slide with the new language
       setTimeout(() => {
         playSlideAudio(activeSection.slides[activeSlideIdx]);
@@ -464,6 +494,109 @@ export default function CoursePage({
     return () => {
       audioRef.current?.pause();
     };
+  }, []);
+
+  // ─── Classroom keyboard navigation ───────────────────────────
+  // Use refs so the single stable event listener always sees fresh state and methods.
+  const kbStateRef = useRef({
+    isPlayingClass,
+    isClassEnded,
+    activeSlideIdx,
+    slideCount: 0 as number,
+    handleNextSlide,
+    handlePrevSlide,
+    togglePlayPause,
+    closeAudioClass,
+    playSlideAudio,
+    activeSection: null as any,
+  });
+  // Update ref every render so the handler always has fresh values
+  kbStateRef.current = {
+    isPlayingClass,
+    isClassEnded,
+    activeSlideIdx,
+    slideCount: activeSection?.slides.length ?? 0,
+    handleNextSlide,
+    handlePrevSlide,
+    togglePlayPause,
+    closeAudioClass,
+    playSlideAudio,
+    activeSection,
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const {
+        isPlayingClass: playing,
+        isClassEnded: ended,
+        activeSlideIdx: idx,
+        slideCount,
+        handleNextSlide: next,
+        handlePrevSlide: prev,
+        togglePlayPause: toggle,
+        closeAudioClass: close,
+        playSlideAudio: play,
+        activeSection: section,
+      } = kbStateRef.current;
+
+      console.log("[Grasp Classroom KB]", {
+        key: e.key,
+        playing,
+        ended,
+        idx,
+        slideCount,
+        target: (e.target as HTMLElement)?.tagName,
+      });
+
+      if (!playing) return;
+
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+        return;
+      }
+
+      if (ended) {
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          setIsClassEnded(false);
+          setActiveSlideIdx(slideCount - 1);
+          if (section?.slides?.[slideCount - 1]) {
+            play(section.slides[slideCount - 1]);
+          }
+        }
+        return;
+      }
+
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        if (idx < slideCount - 1) {
+          const nextIdx = idx + 1;
+          setActiveSlideIdx(nextIdx);
+          if (section?.slides?.[nextIdx]) {
+            play(section.slides[nextIdx]);
+          }
+        }
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (idx > 0) {
+          const prevIdx = idx - 1;
+          setActiveSlideIdx(prevIdx);
+          if (section?.slides?.[prevIdx]) {
+            play(section.slides[prevIdx]);
+          }
+        }
+      } else if (e.key === " ") {
+        e.preventDefault();
+        toggle();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isAudioPlaying = audioRef.current ? !audioRef.current.paused : false;
@@ -987,21 +1120,41 @@ export default function CoursePage({
               />
 
               <div className="lg:col-span-12 flex items-center justify-center w-full h-full min-h-0">
-                <div className="bg-neutral-950 rounded-4xl flex flex-col w-full max-w-7xl aspect-video text-white relative overflow-hidden">
+                <div
+                  ref={classroomSlideRef}
+                  className={`bg-neutral-950 flex flex-col text-white relative overflow-hidden transition-all ${
+                    isClassroomFullscreen
+                      ? "w-screen h-screen justify-center items-center rounded-none"
+                      : "w-full max-w-7xl aspect-video rounded-4xl"
+                  }`}
+                >
                   <div className="absolute inset-0 z-0">
                     <CourseThumbnail title={courseTitle} hideContent />
                     <div className="absolute inset-0 bg-black/10 mix-blend-multiply" />
                   </div>
+
+                  {/* Fullscreen Toggle Button */}
+                  <button
+                    onClick={toggleClassroomFullscreen}
+                    className="absolute top-4 right-4 z-30 p-2.5 bg-black/40 hover:bg-black/60 border border-white/10 rounded-full text-white/80 hover:text-white backdrop-blur-md transition-all cursor-pointer hover:scale-105 active:scale-95"
+                    title={isClassroomFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen"}
+                  >
+                    {isClassroomFullscreen ? (
+                      <CornersInIcon size={16} weight="bold" />
+                    ) : (
+                      <CornersOutIcon size={16} weight="bold" />
+                    )}
+                  </button>
+
                   {isClassEnded ? (
-                    <div className="flex flex-col gap-6 max-w-xl mx-auto w-full my-auto z-10 p-8 md:p-12 relative items-center text-center">
-                      <div className="h-20 w-20 bg-white/20 rounded-full flex items-center justify-center mb-4 backdrop-blur-md border border-white/10">
-                        <CheckCircleIcon
-                          weight="fill"
-                          className="text-white w-10 h-10 drop-shadow-md"
-                        />
-                      </div>
-                      <h2 className="text-4xl md:text-5xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
-                        Class Completed
+                    <div className="flex flex-col gap-4 max-w-xl mx-auto w-full my-auto z-10 p-8 md:p-12 relative items-center text-center">
+                      <CheckCircleIcon
+                        weight="fill"
+                        className="text-white w-14 h-14 drop-shadow-md"
+                      />
+
+                      <h2 className="text-4xl md:text-5xl font-serif text-white drop-shadow-md">
+                        Lesson Completed
                       </h2>
                       <p className="text-lg text-white/80 font-medium drop-shadow-sm">
                         You've finished the lesson on {activeSection.title}.
@@ -1019,7 +1172,7 @@ export default function CoursePage({
                             setActiveSlideIdx(0);
                             playSlideAudio(activeSection.slides[0]);
                           }}
-                          className="px-6 py-3 rounded-full bg-black/30 border border-white/20 text-white font-bold hover:bg-black/50 transition-colors shadow-lg backdrop-blur-md"
+                          className="px-6 py-3 rounded-full bg-black/30 text-white font-bold hover:bg-black/50 transition-colors shadow-lg backdrop-blur-md"
                         >
                           Retake Lesson
                         </button>
@@ -1029,21 +1182,29 @@ export default function CoursePage({
                     <>
                       {/* Classroom slide — layout-aware wrapper */}
                       <div
-                        className={`w-full my-auto z-10 relative overflow-y-auto pb-24 ${
+                        className={`w-full my-auto z-10 relative overflow-y-auto mx-auto ${
+                          isClassroomFullscreen
+                            ? "max-w-[85vw] px-8 md:px-16 pb-36 pt-8"
+                            : "max-w-5xl px-8 pb-28 pt-6"
+                        } ${
                           activeSlide.layout === "visual" ||
                           activeSlide.layout === "title"
-                            ? "flex flex-col items-center justify-center h-full p-8 md:p-14"
-                            : "flex flex-col gap-6 max-w-5xl mx-auto p-8 md:p-12"
+                            ? "flex flex-col items-center justify-center h-full"
+                            : "flex flex-col gap-4"
                         }`}
                       >
                         {/* Title shown inline only for non-self-titling layouts */}
                         {activeSlide.layout !== "title" &&
                           activeSlide.layout !== "statement" && (
                             <>
-                              <h2 className="text-3xl md:text-4xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
+                              <h2
+                                className={`font-serif text-white tracking-tight leading-tight drop-shadow-md ${
+                                  isClassroomFullscreen ? "text-4xl md:text-5xl" : "text-3xl md:text-4xl"
+                                }`}
+                              >
                                 {activeSlide.title}
                               </h2>
-                              <div className="h-0.5 w-16 bg-white/40 mt-2" />
+                              <div className="h-0.5 w-16 bg-white/40 mt-1 mb-4" />
                             </>
                           )}
 
@@ -1053,53 +1214,74 @@ export default function CoursePage({
                           diagramQuery={activeSlide.diagramQuery}
                           layout={activeSlide.layout}
                           variant="dark"
-                          pointClassName="text-base md:text-lg text-white/95 leading-relaxed font-medium drop-shadow-sm"
+                          pointClassName={
+                            isClassroomFullscreen
+                              ? "text-lg md:text-2xl text-white/95 leading-relaxed font-medium drop-shadow-sm"
+                              : "text-base md:text-lg text-white/95 leading-relaxed font-medium drop-shadow-sm"
+                          }
+                          isFullscreen={isClassroomFullscreen}
                         />
                       </div>
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-sm text-neutral-400 font-mono font-semibold z-20">
-                        <button
-                          className="p-2 rounded-full text-white hover:bg-black/50 backdrop-blur-md transition-colors cursor-pointer"
-                          onClick={handlePrevSlide}
-                        >
-                          <CaretLeftIcon size={14} weight="bold" />
-                        </button>
-                        <span className="px-3 py-1 bg-black/30 rounded-full text-white backdrop-blur-md">
-                          {activeSlideIdx + 1} / {activeSection.slides.length}
-                        </span>
-                        {activeSlideIdx === activeSection.slides.length - 1 ? (
+                      <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center gap-2 z-20">
+                        {/* Slide controls */}
+                        <div className="flex items-center gap-2">
                           <button
-                            className="px-4 py-1.5 rounded-full text-white hover:bg-black/50 backdrop-blur-md transition-colors cursor-pointer text-xs font-bold uppercase tracking-wider ml-1"
-                            onClick={() => {
-                              if (audioRef.current) {
-                                audioRef.current.pause();
-                              }
-                              setIsClassEnded(true);
-                              setSections((prev) =>
-                                prev.map((sec) =>
-                                  sec.id === activeSection.id
-                                    ? { ...sec, completed: true }
-                                    : sec,
-                                ),
-                              );
-                              if (isLiveCourse) {
-                                void updateModuleProgress(
-                                  courseId,
-                                  activeSection.id,
-                                  true,
-                                ).catch(() => {});
-                              }
-                            }}
+                            className="p-2.5 rounded-full text-white bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 transition-all cursor-pointer disabled:opacity-30"
+                            onClick={handlePrevSlide}
+                            disabled={activeSlideIdx === 0}
+                            title="Previous slide (←)"
                           >
-                            End Class
+                            <CaretLeftIcon size={14} weight="bold" />
                           </button>
-                        ) : (
-                          <button
-                            className="p-2 rounded-full text-white hover:bg-black/50 backdrop-blur-md transition-colors cursor-pointer"
-                            onClick={handleNextSlide}
-                          >
-                            <CaretRightIcon size={14} weight="bold" />
-                          </button>
-                        )}
+                          <span className="px-4 py-1.5 bg-black/30 rounded-full text-white backdrop-blur-md border border-white/10 text-sm font-mono font-semibold min-w-[64px] text-center">
+                            {activeSlideIdx + 1} / {activeSection.slides.length}
+                          </span>
+                          {activeSlideIdx ===
+                          activeSection.slides.length - 1 ? (
+                            <button
+                              className="px-4 py-1.5 rounded-full text-white bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 transition-all cursor-pointer text-xs font-bold uppercase tracking-wider"
+                              title="End class"
+                              onClick={() => {
+                                if (audioRef.current) {
+                                  audioRef.current.pause();
+                                }
+                                setIsClassEnded(true);
+                                setSections((prev) =>
+                                  prev.map((sec) =>
+                                    sec.id === activeSection.id
+                                      ? { ...sec, completed: true }
+                                      : sec,
+                                  ),
+                                );
+                                if (isLiveCourse) {
+                                  void updateModuleProgress(
+                                    courseId,
+                                    activeSection.id,
+                                    true,
+                                  ).catch(() => {});
+                                }
+                              }}
+                            >
+                              End Class
+                            </button>
+                          ) : (
+                            <button
+                              className="p-2.5 rounded-full text-white bg-black/30 hover:bg-black/50 backdrop-blur-md border border-white/10 transition-all cursor-pointer"
+                              onClick={handleNextSlide}
+                              title="Next slide (→)"
+                            >
+                              <CaretRightIcon size={14} weight="bold" />
+                            </button>
+                          )}
+                        </div>
+                        {/* Keyboard hint row */}
+                        {/* <div className="flex items-center gap-3 text-white/30 text-[10px] font-mono select-none">
+                          <span><kbd className="px-1 py-0.5 rounded bg-white/10 text-white/40 text-[9px]">←</kbd> <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/40 text-[9px]">→</kbd> navigate</span>
+                          <span className="text-white/15">·</span>
+                          <span><kbd className="px-1 py-0.5 rounded bg-white/10 text-white/40 text-[9px]">Space</kbd> pause</span>
+                          <span className="text-white/15">·</span>
+                          <span><kbd className="px-1 py-0.5 rounded bg-white/10 text-white/40 text-[9px]">Esc</kbd> exit</span>
+                        </div> */}
                       </div>
                     </>
                   )}

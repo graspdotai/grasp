@@ -72,20 +72,22 @@ function MathText({ text, className }: { text: string; className?: string }) {
 interface WikiSummary {
   title: string;
   thumbnail?: { source: string; width: number; height: number };
+  originalimage?: { source: string; width: number; height: number };
   description?: string;
 }
 
 interface DiagramPanelProps {
   diagramQuery: string;
   variant?: "dark" | "light";
-  /** When true, diagram fills more vertical space (visual layout) */
   large?: boolean;
+  isFullscreen?: boolean;
 }
 
 export function DiagramPanel({
   diagramQuery,
   variant = "dark",
   large = false,
+  isFullscreen = false,
 }: DiagramPanelProps) {
   const [wiki, setWiki] = useState<WikiSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,41 +115,46 @@ export function DiagramPanel({
     fetchDiagram();
   }, [fetchDiagram]);
 
+  const maxH = isFullscreen
+    ? (large ? "68vh" : "42vh")
+    : (large ? "34vh" : "22vh");
+
   if (loading) {
     return (
       <div
-        className={`rounded-2xl overflow-hidden animate-pulse ${
+        className={`rounded-2xl overflow-hidden animate-pulse w-full ${
           variant === "dark"
             ? "bg-white/10"
             : "bg-neutral-100 border border-neutral-200"
         }`}
         style={{
-          aspectRatio: large ? "4/3" : "4/3",
-          maxHeight: large ? 420 : 260,
+          height: maxH,
+          maxHeight: maxH,
         }}
       />
     );
   }
-  if (error || !wiki?.thumbnail) return null;
+
+  const imageUrl = wiki?.originalimage?.source || wiki?.thumbnail?.source;
+  if (error || !imageUrl) return null;
 
   const isDark = variant === "dark";
-  const maxH = large ? 420 : 260;
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden ${
+      className={`rounded-2xl overflow-hidden flex flex-col justify-center items-center w-full ${
         isDark
           ? "bg-black/30 border border-white/10 backdrop-blur-md shadow-xl"
           : "bg-white border border-neutral-200 shadow-md"
       }`}
+      style={{ height: maxH, maxHeight: maxH }}
     >
-      <div className="relative">
+      <div className="relative flex items-center justify-center w-full h-full overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={wiki.thumbnail.source}
+          src={imageUrl}
           alt={`Diagram: ${wiki.title}`}
-          className="w-full object-contain"
-          style={{ maxHeight: maxH }}
+          className="w-full h-full object-contain"
           loading="lazy"
         />
         <div
@@ -251,17 +258,24 @@ function VisualLayout({
   points,
   diagramQuery,
   variant,
+  isFullscreen,
 }: {
   title: string;
   points: string[];
   diagramQuery?: string | null;
   variant: "dark" | "light";
+  isFullscreen?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-5 h-full">
+    <div className="flex flex-col gap-2 flex-1 min-h-0 w-full">
       {diagramQuery && (
         <div className="flex-1 min-h-0">
-          <DiagramPanel diagramQuery={diagramQuery} variant={variant} large />
+          <DiagramPanel
+            diagramQuery={diagramQuery}
+            variant={variant}
+            large
+            isFullscreen={isFullscreen}
+          />
         </div>
       )}
       {points.length > 0 && (
@@ -269,10 +283,10 @@ function VisualLayout({
           {points.map((p, i) => (
             <span
               key={i}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
                 variant === "dark"
-                  ? "bg-white/10 border-white/15 text-white/90"
-                  : "bg-primary/8 border-primary/20 text-primary"
+                  ? "bg-white text-neutral-900"
+                  : "bg-primary/8 text-primary"
               }`}
             >
               <MathText text={p} />
@@ -344,11 +358,13 @@ function BulletsLayout({
   diagramQuery,
   variant,
   pointClassName,
+  isFullscreen,
 }: {
   points: string[];
   diagramQuery?: string | null;
   variant: "dark" | "light";
   pointClassName?: string;
+  isFullscreen?: boolean;
 }) {
   const isDark = variant === "dark";
   const textClass =
@@ -374,8 +390,12 @@ function BulletsLayout({
         ))}
       </div>
       {diagramQuery && (
-        <div className="w-full lg:w-60 xl:w-80 shrink-0">
-          <DiagramPanel diagramQuery={diagramQuery} variant={variant} />
+        <div className="w-full lg:w-96 xl:w-[450px] shrink-0">
+          <DiagramPanel
+            diagramQuery={diagramQuery}
+            variant={variant}
+            isFullscreen={isFullscreen}
+          />
         </div>
       )}
     </div>
@@ -394,6 +414,7 @@ export interface SlideContentProps {
   variant?: "dark" | "light";
   /** Override class for bullet text */
   pointClassName?: string;
+  isFullscreen?: boolean;
 }
 
 export default function SlideContent({
@@ -403,6 +424,7 @@ export default function SlideContent({
   layout = "bullets",
   variant = "dark",
   pointClassName,
+  isFullscreen = false,
 }: SlideContentProps) {
   const l = layout ?? "bullets";
 
@@ -419,6 +441,7 @@ export default function SlideContent({
         points={points}
         diagramQuery={diagramQuery}
         variant={variant}
+        isFullscreen={isFullscreen}
       />
     );
   }
@@ -437,6 +460,7 @@ export default function SlideContent({
       diagramQuery={diagramQuery}
       variant={variant}
       pointClassName={pointClassName}
+      isFullscreen={isFullscreen}
     />
   );
 }

@@ -1,10 +1,19 @@
 import { z } from "zod";
-import { formatOnboardingForPrompt, type OnboardingProfile } from "@/lib/onboarding";
+import {
+  formatOnboardingForPrompt,
+  type OnboardingProfile,
+} from "@/lib/onboarding";
 import { estimateDurationFromSlides } from "@/lib/lessonDuration";
 import { getOpenAiApiKey } from "@/server/env";
 import { HttpError } from "@/server/errors";
 
-const slideLayoutSchema = z.enum(["bullets", "title", "visual", "two-col", "statement"]);
+const slideLayoutSchema = z.enum([
+  "bullets",
+  "title",
+  "visual",
+  "two-col",
+  "statement",
+]);
 
 const moduleSlidesSchema = z.object({
   keyPoints: z.array(z.string()),
@@ -15,7 +24,7 @@ const moduleSlidesSchema = z.object({
       explanationText: z.string().min(10),
       diagramQuery: z.string().optional().nullable(),
       layout: slideLayoutSchema.default("bullets"),
-    })
+    }),
   ),
 });
 
@@ -42,15 +51,21 @@ export async function generateModuleContent(input: {
     throw new HttpError(500, "OPENAI_NOT_CONFIGURED", errMsg);
   }
 
-  console.log("[OpenaiService] [generateModuleContent] Start generating content", { 
-    topic: input.topic, 
-    moduleTitle: input.moduleTitle,
-    learnerLevel: input.learnerLevel
-  });
+  console.log(
+    "[OpenaiService] [generateModuleContent] Start generating content",
+    {
+      topic: input.topic,
+      moduleTitle: input.moduleTitle,
+      learnerLevel: input.learnerLevel,
+    },
+  );
 
   const sourcesBlock =
     input.sourceHighlights.length > 0
-      ? input.sourceHighlights.slice(0, 12).map((h) => `- ${h}`).join("\n")
+      ? input.sourceHighlights
+          .slice(0, 12)
+          .map((h) => `- ${h}`)
+          .join("\n")
       : "- No external highlights available. Keep content general and accurate.";
 
   const onboardingBlock = input.onboarding
@@ -121,8 +136,8 @@ Return JSON only:
 }
 
 Content rules:
-- 6 to 8 slides per module — exhaustive coverage, not a skim
-- 5 to 8 keyPoints summarizing the module
+- 4 to 6 slides per module — this module covers ONE specific concept, keep it focused and deep, not broad
+- 3 to 5 keyPoints summarizing the module
 - 3 to 5 points per slide (concrete, not generic), except: title=1, statement=1, visual=2-3, two-col=4-6
 - Each explanationText: 200–320 words of continuous spoken teaching for that beat
 - Open with a hook, teach the idea, give an example, close with a takeaway
@@ -143,18 +158,27 @@ Content rules:
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 8192,
+      max_tokens: 10000,
       temperature: 0.45,
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[OpenaiService] [generateModuleContent] OpenAI request failed", { status: response.status, errorText });
-    throw new HttpError(502, "OPENAI_REQUEST_FAILED", `OpenAI request failed: ${errorText}`);
+    console.error(
+      "[OpenaiService] [generateModuleContent] OpenAI request failed",
+      { status: response.status, errorText },
+    );
+    throw new HttpError(
+      502,
+      "OPENAI_REQUEST_FAILED",
+      `OpenAI request failed: ${errorText}`,
+    );
   }
 
-  console.log("[OpenaiService] [generateModuleContent] OpenAI request succeeded");
+  console.log(
+    "[OpenaiService] [generateModuleContent] OpenAI request succeeded",
+  );
 
   const data = (await response.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
@@ -162,32 +186,46 @@ Content rules:
 
   const rawContent = data.choices?.[0]?.message?.content;
   if (!rawContent) {
-    throw new HttpError(502, "OPENAI_EMPTY_RESPONSE", "OpenAI returned an empty response.");
+    throw new HttpError(
+      502,
+      "OPENAI_EMPTY_RESPONSE",
+      "OpenAI returned an empty response.",
+    );
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawContent);
   } catch {
-    throw new HttpError(502, "OPENAI_INVALID_JSON", "OpenAI returned invalid JSON.");
+    throw new HttpError(
+      502,
+      "OPENAI_INVALID_JSON",
+      "OpenAI returned invalid JSON.",
+    );
   }
 
   const validated = moduleSlidesSchema.safeParse(parsed);
   if (!validated.success) {
-    console.error("OpenAI module schema mismatch details:", validated.error.format());
+    console.error(
+      "OpenAI module schema mismatch details:",
+      validated.error.format(),
+    );
     throw new HttpError(
       502,
       "OPENAI_SCHEMA_MISMATCH",
-      `OpenAI response did not match the expected module schema: ${validated.error.message}`
+      `OpenAI response did not match the expected module schema: ${validated.error.message}`,
     );
   }
 
   const duration = estimateDurationFromSlides(validated.data.slides);
 
-  console.log("[OpenaiService] [generateModuleContent] Content parsed and validated successfully", { 
-    moduleTitle: input.moduleTitle, 
-    duration 
-  });
+  console.log(
+    "[OpenaiService] [generateModuleContent] Content parsed and validated successfully",
+    {
+      moduleTitle: input.moduleTitle,
+      duration,
+    },
+  );
 
   return {
     ...validated.data,
@@ -198,19 +236,21 @@ Content rules:
 const lessonPackSchema = z.object({
   summary: z.string(),
   learningObjectives: z.array(z.string()).min(1),
-  lessonOutline: z.array(
-    z.object({
-      title: z.string().min(1),
-      description: z.string(),
-    })
-  ).min(1),
+  lessonOutline: z
+    .array(
+      z.object({
+        title: z.string().min(1),
+        description: z.string(),
+      }),
+    )
+    .min(1),
   quizQuestions: z.array(z.string()),
   sources: z.array(
     z.object({
       title: z.string().min(1),
       url: z.string(),
       highlights: z.array(z.string()),
-    })
+    }),
   ),
 });
 
@@ -231,31 +271,42 @@ export async function generateLessonPack(input: {
     throw new HttpError(500, "OPENAI_NOT_CONFIGURED", errMsg);
   }
 
-  console.log("[OpenaiService] [generateLessonPack] Start generating lesson pack", { 
-    topic: input.topic, 
-    learnerLevel: input.learnerLevel 
-  });
+  console.log(
+    "[OpenaiService] [generateLessonPack] Start generating lesson pack",
+    {
+      topic: input.topic,
+      learnerLevel: input.learnerLevel,
+    },
+  );
 
   const onboardingBlock = input.onboarding
     ? `\nLearner profile:\n${formatOnboardingForPrompt(input.onboarding)}\n`
     : "";
 
   const systemPrompt = `You are a curriculum designer and researcher for Grasp.
-Your job is to design a high-quality lesson pack for a user's target topic and goals.
+Your job is to design a high-quality, exhaustive lesson pack for a user's target topic and goals.
 Additionally, act as a web search research engine and provide 2-5 high-quality, real-world educational resources (from trusted domains like wikipedia.org, khanacademy.org, nasa.gov, britannica.com, or university sites) relevant to the topic.
 For each source, provide a real or highly accurate URL, a descriptive title, and 2-4 actual content highlights/snippets discussing the topic.
+
+Module design philosophy (CRITICAL):
+- Design 8 to 12 modules. More is better — err on the side of too many rather than too few.
+- Each module must cover ONE specific, tightly-scoped concept, process, structure, or skill. Do NOT bundle multiple ideas into one module.
+- Bad example: "Introduction to Cells" (too broad). Good example: "The Cell Membrane: Structure and Function", "Mitochondria and Energy Production", "The Nucleus and DNA Storage".
+- Think of modules like chapters in a textbook split at the finest useful granularity — each should take 5-10 minutes to learn.
+- Sequence modules logically: foundational concepts first, complex applications and synthesis last.
+- Avoid vague titles like "Overview", "Summary", "Advanced Topics". Every module title should tell the learner exactly what they will learn.
 
 Return JSON in this exact structure:
 {
   "summary": "Max 2 short sentences (~200 chars). Why this topic matters.",
-  "learningObjectives": ["objective 1", "objective 2"],
+  "learningObjectives": ["objective 1", "objective 2", "objective 3"],
   "lessonOutline": [
     {
-      "title": "Module Title",
-      "description": "Max 2 short sentences (~150 chars)."
+      "title": "Specific, single-concept module title",
+      "description": "Max 2 short sentences (~150 chars) on exactly what is covered."
     }
   ],
-  "quizQuestions": ["question 1", "question 2"],
+  "quizQuestions": ["question 1", "question 2", "question 3"],
   "sources": [
     {
       "title": "Title of the web resource",
@@ -269,7 +320,7 @@ Return JSON in this exact structure:
 Goal: ${input.goal}
 Learner level: ${input.learnerLevel}
 ${onboardingBlock}
-Please design a tailored lesson pack and research sources matching this profile.`;
+Design a thorough, exhaustive lesson pack. Use 8-12 granular, single-concept modules. Each module title must be specific and descriptive — a learner should know exactly what they will study from the title alone.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -284,15 +335,22 @@ Please design a tailored lesson pack and research sources matching this profile.
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 4096,
+      max_tokens: 6144,
       temperature: 0.4,
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[OpenaiService] [generateLessonPack] OpenAI request failed", { status: response.status, errorText });
-    throw new HttpError(502, "OPENAI_REQUEST_FAILED", `OpenAI request failed: ${errorText}`);
+    console.error(
+      "[OpenaiService] [generateLessonPack] OpenAI request failed",
+      { status: response.status, errorText },
+    );
+    throw new HttpError(
+      502,
+      "OPENAI_REQUEST_FAILED",
+      `OpenAI request failed: ${errorText}`,
+    );
   }
 
   console.log("[OpenaiService] [generateLessonPack] OpenAI request succeeded");
@@ -303,31 +361,45 @@ Please design a tailored lesson pack and research sources matching this profile.
 
   const rawContent = data.choices?.[0]?.message?.content;
   if (!rawContent) {
-    throw new HttpError(502, "OPENAI_EMPTY_RESPONSE", "OpenAI returned an empty response.");
+    throw new HttpError(
+      502,
+      "OPENAI_EMPTY_RESPONSE",
+      "OpenAI returned an empty response.",
+    );
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawContent);
   } catch {
-    throw new HttpError(502, "OPENAI_INVALID_JSON", "OpenAI returned invalid JSON.");
+    throw new HttpError(
+      502,
+      "OPENAI_INVALID_JSON",
+      "OpenAI returned invalid JSON.",
+    );
   }
 
   const validated = lessonPackSchema.safeParse(parsed);
   if (!validated.success) {
-    console.error("OpenAI lesson pack schema mismatch details:", validated.error.format());
+    console.error(
+      "OpenAI lesson pack schema mismatch details:",
+      validated.error.format(),
+    );
     throw new HttpError(
       502,
       "OPENAI_SCHEMA_MISMATCH",
-      `OpenAI response did not match the expected lesson pack schema: ${validated.error.message}`
+      `OpenAI response did not match the expected lesson pack schema: ${validated.error.message}`,
     );
   }
 
-  console.log("[OpenaiService] [generateLessonPack] Pack parsed and validated successfully", {
-    topic: input.topic,
-    summary: validated.data.summary,
-    modulesCount: validated.data.lessonOutline.length
-  });
+  console.log(
+    "[OpenaiService] [generateLessonPack] Pack parsed and validated successfully",
+    {
+      topic: input.topic,
+      summary: validated.data.summary,
+      modulesCount: validated.data.lessonOutline.length,
+    },
+  );
 
   return {
     query: `openai-search: ${input.topic}`,
