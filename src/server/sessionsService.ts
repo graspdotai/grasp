@@ -67,6 +67,8 @@ type SlideRow = {
   title: string;
   explanation_text: string;
   audio_url?: string | null;
+  diagram_query?: string | null;
+  layout?: string | null;
 };
 type SlidePointRow = { slide_id: number; position: number; text: string };
 
@@ -82,7 +84,8 @@ async function persistModuleContent(
   moduleId: number,
   content: ModuleContent,
   nowIso: string,
-  language: string = "english"
+  language: string = "english",
+  onProgress?: (slideIndex: number, slideTitle: string) => void
 ): Promise<void> {
   const supabase = getSupabaseAdminClient();
 
@@ -111,6 +114,7 @@ async function persistModuleContent(
   }
 
   for (const [slideIndex, slide] of content.slides.entries()) {
+    onProgress?.(slideIndex + 1, slide.title);
     let audioUrl: string | null = null;
     try {
       if (slide.explanationText) {
@@ -129,14 +133,17 @@ async function persistModuleContent(
       });
     }
 
-    const { data: slideRow, error: slideError } = await supabase
-      .from("session_slides")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: slideRow, error: slideError } = await (supabase
+      .from("session_slides") as any)
       .insert({
         module_id: moduleId,
         position: slideIndex + 1,
         title: slide.title,
         explanation_text: slide.explanationText,
         audio_url: audioUrl,
+        diagram_query: slide.diagramQuery ?? null,
+        layout: slide.layout ?? "bullets",
         created_at: nowIso,
       })
       .select("id")
@@ -204,6 +211,8 @@ function buildCourseSections(
         points: pointsBySlide.get(slide.id) ?? [],
         explanationText: slide.explanation_text,
         audioUrl: slide.audio_url || null,
+        diagramQuery: slide.diagram_query || null,
+        layout: (slide.layout || "bullets") as "bullets" | "title" | "visual" | "two-col" | "statement",
       })),
     };
   });
@@ -215,13 +224,22 @@ function parseOnboardingFromRaw(raw: unknown): z.infer<typeof onboardingProfileS
   return parsed.success ? parsed.data : undefined;
 }
 
-export async function createLearningSession(payload: unknown) {
+export async function createLearningSession(
+  payload: unknown,
+  onProgress?: (progress: { status: string; message: string; step?: number; totalSteps?: number }) => void
+) {
   const input = createSessionSchema.parse(payload);
   console.log("[SessionsService] [createLearningSession] Start session creation", { 
     topic: input.topic, 
     learnerLevel: input.learnerLevel,
     type: input.type
   });
+
+  onProgress?.({
+    status: "researching",
+    message: "Analyzing your topic and researching sources..."
+  });
+
   const supabase = getSupabaseAdminClient();
   const nowIso = new Date().toISOString();
   const moduleDurationDefault = defaultModuleDuration(input.onboarding);
@@ -247,6 +265,11 @@ export async function createLearningSession(payload: unknown) {
   }
   
   console.log("[SessionsService] [createLearningSession] Generated lesson pack successfully");
+
+  onProgress?.({
+    status: "planning",
+    message: "Structuring custom curriculum..."
+  });
 
   const sourceHighlights = flattenHighlights(lessonPack.sourceResults);
 
@@ -296,7 +319,15 @@ export async function createLearningSession(payload: unknown) {
   }
 
   try {
+    const totalModules = parsedContent.data.lessonOutline.length;
     for (const [index, outlineModule] of parsedContent.data.lessonOutline.entries()) {
+      onProgress?.({
+        status: "generating_module",
+        message: `Generating module ${index + 1} of ${totalModules}: ${outlineModule.title}`,
+        step: index + 1,
+        totalSteps: totalModules
+      });
+
       const { data: moduleRow, error: moduleError } = await supabase
         .from("session_modules")
         .insert({
@@ -329,9 +360,21 @@ export async function createLearningSession(payload: unknown) {
       const lang = input.onboarding?.language
         ? onboardingLanguageToTts(input.onboarding.language)
         : "english";
-      await persistModuleContent(moduleRow.id, moduleContent, nowIso, lang);
+      await persistModuleContent(moduleRow.id, moduleContent, nowIso, lang, (slideIndex, slideTitle) => {
+        onProgress?.({
+          status: "generating_slide",
+          message: `Generating module ${index + 1} of ${totalModules}: ${outlineModule.title} (Slide ${slideIndex} of ${moduleContent.slides.length})`,
+          step: index + 1,
+          totalSteps: totalModules
+        });
+      });
       console.log("[SessionsService] [createLearningSession] Module processing complete", { moduleId: moduleRow.id });
     }
+
+    onProgress?.({
+      status: "finalizing",
+      message: "Finalizing your classroom..."
+    });
 
     await supabase
       .from("learning_sessions")
@@ -396,14 +439,15 @@ export async function getFullCourseBySessionId(sessionIdValue: string) {
     if (keyPointsError) throw new HttpError(500, "KEY_POINTS_READ_FAILED", keyPointsError.message);
     keyPoints = keyPointRows ?? [];
 
-    const { data: slideRows, error: slidesError } = await supabase
-      .from("session_slides")
-      .select("id, module_id, position, title, explanation_text, audio_url")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: slideRows, error: slidesError } = await (supabase
+      .from("session_slides") as any)
+      .select("id, module_id, position, title, explanation_text, audio_url, diagram_query, layout")
       .in("module_id", moduleIds)
       .order("position", { ascending: true });
 
     if (slidesError) throw new HttpError(500, "SLIDES_READ_FAILED", slidesError.message);
-    slides = slideRows ?? [];
+    slides = (slideRows ?? []) as SlideRow[];
 
     const slideIds = slides.map((s) => s.id);
     if (slideIds.length > 0) {

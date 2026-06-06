@@ -4,6 +4,8 @@ import { estimateDurationFromSlides } from "@/lib/lessonDuration";
 import { getOpenAiApiKey } from "@/server/env";
 import { HttpError } from "@/server/errors";
 
+const slideLayoutSchema = z.enum(["bullets", "title", "visual", "two-col", "statement"]);
+
 const moduleSlidesSchema = z.object({
   keyPoints: z.array(z.string()),
   slides: z.array(
@@ -11,9 +13,13 @@ const moduleSlidesSchema = z.object({
       title: z.string().min(1),
       points: z.array(z.string()),
       explanationText: z.string().min(10),
+      diagramQuery: z.string().optional().nullable(),
+      layout: slideLayoutSchema.default("bullets"),
     })
   ),
 });
+
+export type SlideLayout = z.infer<typeof slideLayoutSchema>;
 
 export type ModuleContent = z.infer<typeof moduleSlidesSchema> & {
   duration: string;
@@ -62,7 +68,30 @@ Voice rules (critical):
 - No markdown. No bullet symbols in explanationText — bullets belong only in the points array.
 - Stay grounded in source highlights when provided.
 Use plain language for ${input.learnerLevel} learners.
-When a lesson language is specified, write learner-facing text in that language; keep JSON keys in English.`;
+When a lesson language is specified, write learner-facing text in that language; keep JSON keys in English.
+
+Math notation rules:
+- When a slide covers mathematical or scientific content with formulas/equations, write them using LaTeX syntax.
+- Use $...$ for inline math (e.g. $E = mc^2$) and $$...$$ for block/display math (e.g. $$\\int_0^\\infty e^{-x}\\,dx = 1$$).
+- Math notation is allowed in both points and explanationText.
+- Only use math notation when it genuinely aids understanding — do not force it on non-mathematical content.
+
+Diagram rules (CRITICAL — diagrams dramatically improve learning, do not skip them):
+- ANY slide covering biology, anatomy, chemistry, physics, astronomy, ecology, geology, medicine, or earth science MUST have a diagramQuery.
+- ANY slide introducing a named structure (cell organelles, DNA, atom, heart, lung, brain, neuron, leaf, flower, rock cycle, water cycle, food chain, solar system, circuit, etc.) MUST have a diagramQuery.
+- Set diagramQuery to the most specific, accurate Wikipedia article title for the concept (e.g. "Cell (biology)", "Animal cell", "Plant cell", "Mitochondrion", "DNA", "Atom", "Human heart", "Neuron", "Photosynthesis", "Water cycle", "Solar System", "Periodic table", "Chloroplast", "Ribosome", "Chromosome").
+- For historical events, math concepts, language skills, or abstract ideas with no physical structure to visualize, set diagramQuery to null.
+- diagramQuery must be a precise English Wikipedia article title. When in doubt, include one — it is better to try than to leave it null.
+
+Slide layout rules (CRITICAL — vary layouts for engagement, never use only "bullets"):
+Available layouts and when to use them:
+- "title": Use for the FIRST slide of every module and any major section-opening concept. Has a large centered title and a brief subtitle. Points array should have exactly 1 item (the subtitle/hook sentence).
+- "visual": Use when the slide has a diagramQuery AND the diagram is the primary teaching tool (e.g., "This is a cell", "The water cycle", "The periodic table"). Points serve as labeled callouts (2–3 short labels only). The diagram takes center stage.
+- "two-col": Use for compare/contrast, cause/effect, or process slides. Points split into two columns — use exactly 4 to 6 points so they split evenly.
+- "statement": Use for a single powerful concept, a surprising fact, a key definition, or a memorable takeaway. Points array has exactly 1 item — a bold, punchy sentence.
+- "bullets": Default. Use for explanation slides with 3–5 normal bullet points.
+Distribute layouts across all slides in a module so no more than 3 consecutive slides share the same layout.
+A 7-slide module should aim for: 1 title, 1–2 visual, 1 statement, 1 two-col, 2–3 bullets.`;
 
   const userPrompt = `Topic: ${input.topic}
 Goal: ${input.goal}
@@ -83,8 +112,10 @@ Return JSON only:
   "slides": [
     {
       "title": "short lesson beat title",
+      "layout": "bullets | title | visual | two-col | statement",
       "points": ["spoken bullet", "spoken bullet", "spoken bullet"],
-      "explanationText": "full voice script the teacher reads aloud"
+      "explanationText": "full voice script the teacher reads aloud",
+      "diagramQuery": "Wikipedia article title or null"
     }
   ]
 }
@@ -92,10 +123,12 @@ Return JSON only:
 Content rules:
 - 6 to 8 slides per module — exhaustive coverage, not a skim
 - 5 to 8 keyPoints summarizing the module
-- 3 to 5 points per slide (concrete, not generic)
+- 3 to 5 points per slide (concrete, not generic), except: title=1, statement=1, visual=2-3, two-col=4-6
 - Each explanationText: 200–320 words of continuous spoken teaching for that beat
 - Open with a hook, teach the idea, give an example, close with a takeaway
-- Do NOT include duration — we calculate it from word count`;
+- Do NOT include duration — we calculate it from word count
+- Science/biology/anatomy/physics slides MUST set diagramQuery to a real Wikipedia article title
+- Vary layouts — aim for a mix of title + visual + two-col + statement + bullets across the module`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",

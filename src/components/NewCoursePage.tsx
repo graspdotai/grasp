@@ -60,6 +60,7 @@ export default function NewCoursePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [onboarding, setOnboarding] = useState(loadOnboardingProfile());
+  const [generationStatus, setGenerationStatus] = useState<string>("");
 
   // Input focus states for sleek underline animation
   const [isTopicFocused, setIsTopicFocused] = useState(false);
@@ -74,6 +75,7 @@ export default function NewCoursePage() {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
+    setGenerationStatus("Analyzing your topic and researching sources...");
 
     try {
       const profile = loadOnboardingProfile();
@@ -84,6 +86,8 @@ export default function NewCoursePage() {
         learnerLevel,
         onboarding: profile ?? undefined,
         userId,
+      }, (progress) => {
+        setGenerationStatus(progress.message);
       });
       router.push(`/course/${data.course.id}`);
     } catch (err) {
@@ -93,7 +97,13 @@ export default function NewCoursePage() {
   }
 
   if (isSubmitting) {
-    return <CourseGeneratingOverlay open topic={topic.trim()} />;
+    return (
+      <CourseGeneratingOverlay
+        open
+        topic={topic.trim()}
+        statusText={generationStatus}
+      />
+    );
   }
 
   return (

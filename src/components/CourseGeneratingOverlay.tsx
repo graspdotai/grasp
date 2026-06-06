@@ -7,6 +7,7 @@ import Spinner from "@/components/Spinner";
 interface CourseGeneratingOverlayProps {
   open: boolean;
   topic: string;
+  statusText?: string;
 }
 
 const PHASES = [
@@ -21,6 +22,7 @@ const PHASES = [
 export default function CourseGeneratingOverlay({
   open,
   topic,
+  statusText,
 }: CourseGeneratingOverlayProps) {
   const [phaseIndex, setPhaseIndex] = useState(0);
 
@@ -33,12 +35,14 @@ export default function CourseGeneratingOverlay({
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || statusText) return;
     const interval = setInterval(() => {
       setPhaseIndex((prev) => (prev + 1) % PHASES.length);
     }, 3500);
     return () => clearInterval(interval);
-  }, [open]);
+  }, [open, statusText]);
+
+  const displayText = statusText || PHASES[phaseIndex];
 
   return (
     <AnimatePresence>
@@ -66,14 +70,14 @@ export default function CourseGeneratingOverlay({
               <AnimatePresence mode="wait">
                 <motion.h2
                   id="course-generating-title"
-                  key={phaseIndex}
+                  key={displayText}
                   initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
                   transition={{ duration: 0.4, ease: "linear" }}
                   className="font-sans text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 py-6"
                 >
-                  {PHASES[phaseIndex]}
+                  {displayText}
                 </motion.h2>
               </AnimatePresence>
             </div>

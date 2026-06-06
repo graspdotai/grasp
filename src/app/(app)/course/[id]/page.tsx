@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import SectionReferenceLinks from "@/components/SectionReferenceLinks";
+import SlideContent from "@/components/SlideContent";
 import {
   isUuid,
   onboardingLanguageToTts,
@@ -757,22 +758,21 @@ export default function CoursePage({
                 <div className="absolute inset-0 bg-black/10 mix-blend-multiply" />
               </div>
               <div className="my-auto z-10 flex flex-col gap-4 p-8 relative">
-                <h3 className="text-xl md:text-2xl font-serif text-white tracking-tight drop-shadow-md">
-                  {activeSlide.title}
-                </h3>
+                {/* Hide the header for layouts that render their own title */}
+                {activeSlide.layout !== "title" && activeSlide.layout !== "statement" && (
+                  <h3 className="text-xl md:text-2xl font-serif text-white tracking-tight drop-shadow-md">
+                    {activeSlide.title}
+                  </h3>
+                )}
 
-                <div className="flex flex-col gap-3 mt-2">
-                  {activeSlide.points.map((point, idx) => (
-                    <div key={idx} className="flex items-start gap-3">
-                      <span className="text-white/80 font-bold text-sm mt-0.5">
-                        •
-                      </span>
-                      <p className="text-xs md:text-sm text-white/90 font-medium leading-relaxed drop-shadow-sm">
-                        {point}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                <SlideContent
+                  title={activeSlide.title}
+                  points={activeSlide.points}
+                  diagramQuery={activeSlide.diagramQuery}
+                  layout={activeSlide.layout}
+                  variant="dark"
+                  pointClassName="text-xs md:text-sm text-white/90 font-medium leading-relaxed drop-shadow-sm"
+                />
               </div>
             </div>
 
@@ -1025,25 +1025,30 @@ export default function CoursePage({
                     </div>
                   ) : (
                     <>
-                      <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full my-auto z-10 p-8 md:p-12 pb-24 relative overflow-y-auto">
-                        <h2 className="text-3xl md:text-4xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
-                          {activeSlide.title}
-                        </h2>
+                      {/* Classroom slide — layout-aware wrapper */}
+                      <div className={`w-full my-auto z-10 relative overflow-y-auto pb-24 ${
+                        activeSlide.layout === "visual" || activeSlide.layout === "title"
+                          ? "flex flex-col items-center justify-center h-full p-8 md:p-14"
+                          : "flex flex-col gap-6 max-w-2xl mx-auto p-8 md:p-12"
+                      }`}>
+                        {/* Title shown inline only for non-self-titling layouts */}
+                        {activeSlide.layout !== "title" && activeSlide.layout !== "statement" && (
+                          <>
+                            <h2 className="text-3xl md:text-4xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
+                              {activeSlide.title}
+                            </h2>
+                            <div className="h-0.5 w-16 bg-white/40 mt-2" />
+                          </>
+                        )}
 
-                        <div className="h-0.5 w-16 bg-white/40 mt-2" />
-
-                        <div className="flex flex-col gap-4 mt-6">
-                          {activeSlide.points.map((pt, idx) => (
-                            <div key={idx} className="flex items-start gap-4">
-                              <span className="text-white/80 font-bold text-xl mt-1">
-                                •
-                              </span>
-                              <p className="text-base md:text-lg text-white/95 leading-relaxed font-medium drop-shadow-sm">
-                                {pt}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
+                        <SlideContent
+                          title={activeSlide.title}
+                          points={activeSlide.points}
+                          diagramQuery={activeSlide.diagramQuery}
+                          layout={activeSlide.layout}
+                          variant="dark"
+                          pointClassName="text-base md:text-lg text-white/95 leading-relaxed font-medium drop-shadow-sm"
+                        />
                       </div>
                       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-sm text-neutral-400 font-mono font-semibold z-20">
                         <button

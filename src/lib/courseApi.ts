@@ -1,10 +1,14 @@
 import type { OnboardingProfile } from "@/lib/onboarding";
 
+export type SlideLayout = "bullets" | "title" | "visual" | "two-col" | "statement";
+
 export interface Slide {
   title: string;
   points: string[];
   explanationText: string;
   audioUrl?: string | null;
+  diagramQuery?: string | null;
+  layout?: SlideLayout | null;
 }
 
 export interface CourseSection {
@@ -53,13 +57,16 @@ export async function fetchCourse(sessionId: string): Promise<CoursePayload> {
   return res.json();
 }
 
-export async function createCourse(input: {
-  topic: string;
-  goal: string;
-  learnerLevel: "beginner" | "intermediate" | "advanced";
-  onboarding?: OnboardingProfile;
-  userId?: string;
-}): Promise<CoursePayload> {
+export async function createCourse(
+  input: {
+    topic: string;
+    goal: string;
+    learnerLevel: "beginner" | "intermediate" | "advanced";
+    onboarding?: OnboardingProfile;
+    userId?: string;
+  },
+  onProgress?: (progress: { status: string; message: string; step?: number; totalSteps?: number }) => void
+): Promise<CoursePayload> {
   const res = await fetch("/api/sessions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -71,7 +78,66 @@ export async function createCourse(input: {
     throw new Error(body.error ?? "Failed to create course");
   }
 
-  return res.json();
+  const reader = res.body?.getReader();
+  if (!reader) {
+    return res.json();
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let finalData: CoursePayload | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const payload = JSON.parse(line);
+        if (payload.type === "progress") {
+          onProgress?.({
+            status: payload.status,
+            message: payload.message,
+            step: payload.step,
+            totalSteps: payload.totalSteps,
+          });
+        } else if (payload.type === "complete") {
+          finalData = payload.data;
+        } else if (payload.type === "error") {
+          throw new Error(payload.message ?? "Failed to generate course");
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes("Failed to generate course")) {
+          throw err;
+        }
+        console.error("[createCourse] Error parsing line:", err);
+      }
+    }
+  }
+
+  if (buffer.trim()) {
+    try {
+      const payload = JSON.parse(buffer);
+      if (payload.type === "complete") {
+        finalData = payload.data;
+      } else if (payload.type === "error") {
+        throw new Error(payload.message ?? "Failed to generate course");
+      }
+    } catch (err) {
+      console.error("[createCourse] Error parsing final buffer:", err);
+    }
+  }
+
+  if (!finalData) {
+    throw new Error("Course generation finished without returning course data.");
+  }
+
+  return finalData;
 }
 
 export async function updateModuleProgress(

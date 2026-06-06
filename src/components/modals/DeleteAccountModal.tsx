@@ -19,7 +19,7 @@ const stepVariants = {
   exit: (dir: number) => ({ x: dir * -32, opacity: 0 }),
 };
 
-const stepTransition = { duration: 0.22, ease: [0.16, 1, 0.3, 1] };
+const stepTransition = { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const };
 
 export default function DeleteAccountModal({
   open,
