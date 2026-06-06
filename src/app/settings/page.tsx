@@ -4,7 +4,22 @@ import { useEffect, useState } from "react";
 import { useProfile, useInvalidateProfile } from "@/hooks/useProfile";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeftIcon, SignOutIcon } from "@phosphor-icons/react";
+import {
+  ArrowLeftIcon,
+  SignOutIcon,
+  BookOpenIcon,
+  GraduationCapIcon,
+  LightbulbIcon,
+  BrainIcon,
+  NotebookIcon,
+  BookmarkIcon,
+  StarIcon,
+  PencilSimpleIcon,
+  MagnifyingGlassIcon,
+  FlaskIcon,
+  ClockIcon,
+  TrophyIcon,
+} from "@phosphor-icons/react";
 import Navbar from "@/components/Navbar";
 import UserAvatar from "@/components/UserAvatar";
 import {
@@ -115,144 +130,217 @@ export default function SettingsPage() {
           Back to Courses
         </Link>
 
-        <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900">Settings</h1>
-        <p className="text-sm text-neutral-500 mt-2">
-          Manage your account and learning preferences.
-        </p>
+        <div className="bg-white rounded-3xl border border-neutral-100 overflow-hidden max-w-3xl mx-auto">
+          {/* Header with decorative ghost icons */}
+          <div className="relative px-6 pt-6 pb-5 sm:px-8 sm:pt-8 sm:pb-6 overflow-hidden">
+            {/* Far top-left corner — peeking in for balance */}
+            <BookOpenIcon
+              size={64}
+              weight="light"
+              className="pointer-events-none select-none absolute -top-3 -left-4 rotate-[-16deg] text-neutral-400 opacity-[0.15]"
+            />
 
-        <div className="mt-8 flex flex-col gap-4">
-          <section className="bg-white rounded-3xl border border-neutral-100 p-6">
-            <h2 className="text-sm font-semibold text-neutral-800 mb-4">Profile</h2>
+            {/* Right cluster — two columns, spread vertically */}
+            <GraduationCapIcon
+              size={72}
+              weight="light"
+              className="pointer-events-none select-none absolute -top-2 right-3  rotate-12      text-neutral-400 opacity-[0.20]"
+            />
+            <LightbulbIcon
+              size={64}
+              weight="light"
+              className="pointer-events-none select-none absolute -bottom-2 right-2 rotate-[-8deg] text-neutral-400 opacity-[0.18]"
+            />
 
-            {!userId ? (
-              <p className="text-sm text-neutral-500">
-                <Link href="/signin" className="text-primary font-semibold hover:underline">
-                  Sign in
-                </Link>{" "}
-                to edit your name and avatar.
-              </p>
-            ) : isLoading ? (
-              <p className="text-sm text-neutral-500">Loading…</p>
-            ) : (
-              <form onSubmit={handleSaveProfile} className="flex flex-col gap-5">
-                <div className="flex items-center gap-4">
-                  <UserAvatar profile={previewProfile} size={56} variant={avatarVariant} />
-                  <div>
-                    <p className="text-sm font-semibold text-neutral-800">{displayName}</p>
-                    <p className="text-xs text-neutral-500">{email}</p>
-                  </div>
-                </div>
+            <BrainIcon
+              size={56}
+              weight="light"
+              className="pointer-events-none select-none absolute top-0 right-24 -rotate-12     text-neutral-400 opacity-[0.17]"
+            />
+            <NotebookIcon
+              size={52}
+              weight="light"
+              className="pointer-events-none select-none absolute bottom-0 right-20 rotate-16    text-neutral-400 opacity-[0.16]"
+            />
 
-                <div>
-                  <label htmlFor="fullName" className="text-xs font-medium text-neutral-600">
-                    Full name
-                  </label>
-                  <input
-                    id="fullName"
-                    name="fullName"
-                    type="text"
-                    maxLength={120}
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Your name"
-                    className="mt-1.5 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
+            <BookmarkIcon
+              size={44}
+              weight="light"
+              className="pointer-events-none select-none absolute top-1/2 -translate-y-1/2 right-12 rotate-22 text-neutral-400 opacity-[0.14]"
+            />
 
-                <div>
-                  <p className="text-xs font-medium text-neutral-600 mb-2">Avatar style</p>
-                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-                    {AVATAR_VARIANTS.map((variant) => (
-                      <button
-                        key={variant}
-                        type="button"
-                        onClick={() => setAvatarVariant(variant)}
-                        className={`flex flex-col items-center gap-1 rounded-xl border p-2 transition-colors ${
-                          avatarVariant === variant
-                            ? "border-primary bg-primary/5"
-                            : "border-neutral-200 hover:border-neutral-300"
-                        }`}
-                        aria-pressed={avatarVariant === variant}
-                        aria-label={AVATAR_VARIANT_LABELS[variant]}
-                      >
-                        <UserAvatar
-                          profile={previewProfile}
-                          size={32}
-                          variant={variant}
-                        />
-                        <span className="text-[9px] font-medium text-neutral-500">
-                          {AVATAR_VARIANT_LABELS[variant]}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <StarIcon
+              size={38}
+              weight="light"
+              className="pointer-events-none select-none absolute top-2 right-36 rotate-18 text-neutral-400 opacity-[0.14]"
+            />
+            <TrophyIcon
+              size={48}
+              weight="light"
+              className="pointer-events-none select-none absolute bottom-1 right-36 rotate-[-14deg] text-neutral-400 opacity-[0.15]"
+            />
+            <MagnifyingGlassIcon
+              size={42}
+              weight="light"
+              className="pointer-events-none select-none absolute top-0 right-48 rotate-10 text-neutral-400 opacity-[0.13]"
+            />
+            <FlaskIcon
+              size={40}
+              weight="light"
+              className="pointer-events-none select-none absolute bottom-0 right-52 rotate-[-18deg] text-neutral-400 opacity-[0.13]"
+            />
+            <PencilSimpleIcon
+              size={44}
+              weight="light"
+              className="pointer-events-none select-none absolute top-1/2 -translate-y-1/2 right-44 rotate-24 text-neutral-400 opacity-[0.12]"
+            />
+            <ClockIcon
+              size={40}
+              weight="light"
+              className="pointer-events-none select-none absolute top-3 right-60 rotate-[-8deg] text-neutral-400 opacity-[0.12]"
+            />
 
-                <div className="flex items-center gap-3">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
-                  >
-                    {isSaving ? "Saving…" : "Save profile"}
-                  </button>
-                  {saveError && (
-                    <span className="text-sm text-red-600">{saveError}</span>
-                  )}
-                </div>
-              </form>
-            )}
-          </section>
+            <div className="relative gap-6 flex flex-col">
+              <UserAvatar profile={previewProfile} size={56} variant={avatarVariant} />
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight leading-tight">
+                  {displayName}
+                </h1>
+                <p className="text-sm text-neutral-500 font-medium">{email}</p>
+              </div>
+            </div>
+          </div>
 
-          <section className="bg-white rounded-3xl border border-neutral-100 p-6">
-            <h2 className="text-sm font-semibold text-neutral-800 mb-4">Learning</h2>
-            <ul className="space-y-3 text-sm">
-              <li>
-                <Link
-                  href="/onboarding"
-                  className="font-medium text-primary hover:underline"
-                >
-                  Redo onboarding
-                </Link>
-                <p className="text-neutral-500 text-xs mt-0.5">
-                  Update interests, language, and lesson length for new courses.
+          <div className="px-6 pb-6 sm:px-8 sm:pb-8 flex flex-col gap-8">
+            <section className="pt-6 border-t border-neutral-100">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-4">Edit Profile</h2>
+
+              {!userId ? (
+                <p className="text-sm text-neutral-500">
+                  <Link href="/signin" className="text-primary font-semibold hover:underline">
+                    Sign in
+                  </Link>{" "}
+                  to edit your name and avatar.
                 </p>
-              </li>
-              <li>
-                <Link href="/profile" className="font-medium text-primary hover:underline">
-                  View profile
-                </Link>
-              </li>
-            </ul>
-          </section>
+              ) : isLoading ? (
+                <p className="text-sm text-neutral-500">Loading…</p>
+              ) : (
+                <form onSubmit={handleSaveProfile} className="flex flex-col gap-5">
+                  <div>
+                    <label htmlFor="fullName" className="text-xs font-medium text-neutral-600">
+                      Full name
+                    </label>
+                    <input
+                      id="fullName"
+                      name="fullName"
+                      type="text"
+                      maxLength={120}
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Your name"
+                      className="mt-1.5 h-10 w-full rounded-xl border border-neutral-200 px-3 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
 
-          <section className="bg-white rounded-3xl border border-neutral-100 p-6">
-            <h2 className="text-sm font-semibold text-neutral-800 mb-4">Session</h2>
-            <button
-              type="button"
-              onClick={() => setShowSignOutModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
-            >
-              <SignOutIcon size={18} />
-              Sign out
-            </button>
-          </section>
+                  <div>
+                    <p className="text-xs font-medium text-neutral-600 mb-2">Avatar style</p>
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                      {AVATAR_VARIANTS.map((variant) => (
+                        <button
+                          key={variant}
+                          type="button"
+                          onClick={() => setAvatarVariant(variant)}
+                          className={`flex flex-col items-center gap-1 rounded-xl border p-2 transition-colors ${
+                            avatarVariant === variant
+                              ? "border-primary bg-primary/5"
+                              : "border-neutral-200 hover:border-neutral-300"
+                          }`}
+                          aria-pressed={avatarVariant === variant}
+                          aria-label={AVATAR_VARIANT_LABELS[variant]}
+                        >
+                          <UserAvatar
+                            profile={previewProfile}
+                            size={32}
+                            variant={variant}
+                          />
+                          <span className="text-[9px] font-medium text-neutral-500">
+                            {AVATAR_VARIANT_LABELS[variant]}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-          {userId && (
-            <section className="bg-white rounded-3xl border border-danger-100 p-6">
-              <h2 className="text-sm font-semibold text-danger-700 mb-2">Delete account</h2>
-              <p className="text-sm text-neutral-500 mb-4">
-                Removes your profile, all courses, and your sign-in. This cannot be undone.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowDeleteModal(true)}
-                className="rounded-xl bg-danger-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-danger-700"
-              >
-                Delete my account
-              </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60"
+                    >
+                      {isSaving ? "Saving…" : "Save profile"}
+                    </button>
+                    {saveError && (
+                      <span className="text-sm text-red-600">{saveError}</span>
+                    )}
+                  </div>
+                </form>
+              )}
             </section>
-          )}
+
+            <section className="pt-8 border-t border-neutral-100">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-4">Learning Preferences</h2>
+              <ul className="space-y-3 text-sm">
+                <li>
+                  <Link
+                    href="/onboarding"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Redo onboarding
+                  </Link>
+                  <p className="text-neutral-500 text-xs mt-0.5">
+                    Update interests, language, and lesson length for new courses.
+                  </p>
+                </li>
+                <li>
+                  <Link href="/profile" className="font-medium text-primary hover:underline">
+                    View profile overview
+                  </Link>
+                </li>
+              </ul>
+            </section>
+
+            <section className="pt-8 border-t border-neutral-100">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-4">Session & Account</h2>
+              <div className="flex flex-col gap-6">
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSignOutModal(true)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+                  >
+                    <SignOutIcon size={18} />
+                    Sign out
+                  </button>
+                </div>
+                
+                {userId && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-danger-700 mb-1">Danger Zone</h3>
+                    <p className="text-sm text-neutral-500 mb-3">
+                      Removes your profile, all courses, and your sign-in. This cannot be undone.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteModal(true)}
+                      className="rounded-xl bg-danger-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-danger-700"
+                    >
+                      Delete my account
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
 
