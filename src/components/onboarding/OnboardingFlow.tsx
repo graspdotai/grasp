@@ -9,6 +9,7 @@ import LogoIcon from "@/components/Logo";
 import { saveOnboardingDetails } from "@/lib/auth/client";
 import { saveOnboardingProfile } from "@/lib/onboardingStorage";
 import { getLocalUserId } from "@/lib/userSession";
+import Spinner from "@/components/Spinner";
 
 const STEPS = [
   {
@@ -17,21 +18,17 @@ const STEPS = [
     description:
       "Choose up to 5. This helps us shape courses around your goals.",
     options: [
-      "High school student",
-      "College student",
-      "Graduate student",
-      "Lifelong learner",
-      "Educator",
-      "Self-taught coder",
-      "Career changer",
-      "Bootcamper",
-      "Researcher",
-      "Homeschooler",
-      "Corporate trainee",
-      "Certification seeker",
-      "Test prep student",
-      "STEM enthusiast",
-      "Language learner",
+      "Student (K-12 / High School)",
+      "Undergraduate Student",
+      "Graduate Student",
+      "Working Professional",
+      "Career Pivoter",
+      "Academic Educator",
+      "Self-Taught Learner",
+      "Hobbyist / Explorer",
+      "Certification Candidate",
+      "Curious Mind",
+      "Independent Researcher",
     ],
   },
   {
@@ -40,20 +37,21 @@ const STEPS = [
     description:
       "Select a few interests. You can always explore something new later.",
     options: [
-      "Computer Science",
-      "Mathematics",
-      "Data Science",
-      "Artificial Intelligence",
-      "Web Development",
-      "UI/UX Design",
-      "Languages",
-      "History & Humanities",
-      "Business & Finance",
-      "Natural Sciences",
-      "Engineering",
+      "Technology & Programming",
+      "Artificial Intelligence & Data",
+      "Mathematics & Engineering",
+      "Natural & Health Sciences",
+      "Business & Entrepreneurship",
+      "Finance & Economics",
+      "History & Philosophy",
+      "Literature & Creative Writing",
+      "Languages & Linguistics",
+      "Art, Music & Creative Design",
+      "Psychology & Social Sciences",
+      "Law & Public Policy",
+      "Professional & Soft Skills",
+      "Personal Growth & Wellness",
       "Standardized Test Prep",
-      "Soft Skills",
-      "Creative Arts",
     ],
   },
   {
@@ -254,8 +252,17 @@ export default function OnboardingFlow() {
                   onClick={continueFlow}
                   type="button"
                 >
-                  {isSaving ? "Saving..." : step === STEPS.length - 1 ? "Finish" : "Continue"}
-                  <ArrowRight aria-hidden size={16} />
+                  {isSaving ? (
+                    <>
+                      <Spinner className="text-white" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{step === STEPS.length - 1 ? "Finish" : "Continue"}</span>
+                      <ArrowRight aria-hidden size={16} />
+                    </>
+                  )}
                 </motion.button>
               </div>
 

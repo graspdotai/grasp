@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import CourseGeneratingOverlay from "@/components/CourseGeneratingOverlay";
 import Navbar from "@/components/Navbar";
+import Spinner from "@/components/Spinner";
 import { createCourse } from "@/lib/courseApi";
 import { loadOnboardingProfile } from "@/lib/onboardingStorage";
 import { getLocalUserId } from "@/lib/userSession";
@@ -96,15 +97,9 @@ export default function NewCoursePage() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-neutral-900 pb-24">
-      {/* Background radial glow */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] pointer-events-none overflow-hidden"
-        aria-hidden="true"
-      >
-        <div className="absolute -top-[200px] left-[10%] w-[350px] h-[350px] rounded-full bg-primary-100/30 blur-[100px]" />
-        <div className="absolute top-[50px] right-[15%] w-[400px] h-[400px] rounded-full bg-purple-100/20 blur-[120px]" />
-      </div>
+    <main className="min-h-screen mesh-gradient-light text-neutral-900 pb-24 relative overflow-hidden">
+      {/* Subtle grid pattern for premium texture */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-25 pointer-events-none select-none" aria-hidden="true" />
 
       <div className="max-w-7xl mx-auto px-5 py-5 sm:px-8 sm:py-6 relative z-10">
         <Navbar />
@@ -129,7 +124,7 @@ export default function NewCoursePage() {
           <motion.div variants={itemVariants} className="space-y-5">
             <p className="text-neutral-500 text-lg leading-relaxed max-w-xl">
               Describe your topic and learning goal below. Grasp will construct
-              a complete, custom curriculum optimized for speech-tutor learning.
+              a complete, custom course tailored to you.
             </p>
           </motion.div>
 
@@ -284,8 +279,17 @@ export default function NewCoursePage() {
                   disabled={isSubmitting}
                   className="group relative overflow-hidden w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-4 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-300 shadow-md shadow-neutral-900/5 hover:shadow-xl hover:shadow-neutral-900/10 active:scale-[0.98]"
                 >
-                  <span>Create Course</span>
-                  <ArrowUpRightIcon size={20} weight="regular" />
+                  {isSubmitting ? (
+                    <>
+                      <Spinner className="text-white" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Create Course</span>
+                      <ArrowUpRightIcon size={20} weight="regular" />
+                    </>
+                  )}
                 </button>
               </div>
             </form>

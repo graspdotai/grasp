@@ -33,241 +33,6 @@ import {
 import { useCourse } from "@/hooks/useCourse";
 import { sourcesForSection, type CourseSourceLink } from "@/lib/sectionSources";
 
-// Full Mock Data with multiple slides per section
-const initialSections: CourseSection[] = [
-  {
-    id: "sec-1",
-    title: "Introduction to Thermodynamics",
-    duration: "8 mins",
-    completed: true,
-    description:
-      "Welcome to Thermodynamics 101. In this fundamental section, we explore the core concepts of temperature, heat, system boundaries, and thermodynamic equilibrium. You will understand how energy behaves and the primary definitions that lay the groundwork for engineering thermodynamics.",
-    keyPoints: [
-      "Understand what a thermodynamic system, boundary, and surroundings are",
-      "Differentiate between closed, open, and isolated systems",
-      "Learn the Zeroth Law of Thermodynamics and the definition of temperature",
-      "Explore intensive vs. extensive properties",
-    ],
-    slides: [
-      {
-        title: "What is Thermodynamics?",
-        points: [
-          "Study of heat, work, energy, and their transformations in systems.",
-          "Derived from Greek: 'therme' (heat) and 'dynamis' (power/motion).",
-          "Formulates the core laws that govern engine design, cooling, and chemistry.",
-        ],
-        explanationText:
-          "Welcome to Grasp AI's Thermodynamics 101 course. Thermodynamics is the physical science of heat, work, energy, and entropy. Originally developed in the nineteenth century to improve the efficiency of steam engines, it now forms the cornerstone of modern mechanical engineering, physics, and chemistry. Today, we will learn how energy transforms and the boundaries that control it.",
-      },
-      {
-        title: "Systems, Boundaries, and Surroundings",
-        points: [
-          "System: The specific quantity of matter chosen for thermodynamic analysis.",
-          "Surroundings: All physical matter and space outside the chosen system.",
-          "Boundary: The real or imaginary envelope separating system from surroundings.",
-        ],
-        explanationText:
-          "In thermodynamics, you must first define your boundaries. The system is the specific substance or region in space we want to study. Everything outside this system constitutes the surroundings. The separator between them is the boundary, which can be real or imaginary, fixed or moving, and has zero thickness.",
-      },
-      {
-        title: "Open vs. Closed vs. Isolated",
-        points: [
-          "Closed System (Control Mass): Fixed amount of mass. Mass cannot cross boundary; heat/work can.",
-          "Open System (Control Volume): Mass and energy can both cross boundaries freely.",
-          "Isolated System: Neither mass nor energy can cross the boundaries.",
-        ],
-        explanationText:
-          "Systems are classified by what crosses their boundaries. A closed system, or control mass, has a fixed amount of matter; heat and work can cross, but mass cannot. An open system, or control volume, allows both mass and energy to cross. Lastly, an isolated system permits nothing to cross—neither mass nor energy.",
-      },
-    ],
-  },
-  {
-    id: "sec-2",
-    title: "The First Law & Energy Conservation",
-    duration: "12 mins",
-    completed: true,
-    description:
-      "The First Law of Thermodynamics is the conservation of energy principle. In this section, we define work, heat transfer, and internal energy. We analyze how energy changes forms but is never created or destroyed, applying these concepts to closed systems.",
-    keyPoints: [
-      "Define heat (Q) and work (W) as energy in transition across boundaries",
-      "State the conservation of energy equation for closed systems: ΔU = Q - W",
-      "Learn boundary work (P-dV work) in expansion and compression processes",
-      "Understand specific heats (Cv and Cp) of pure substances",
-    ],
-    slides: [
-      {
-        title: "The First Law: Energy Conservation",
-        points: [
-          "Energy cannot be created or destroyed; it can only change forms.",
-          "The net change in total energy of a system during a process is equal to net energy transfer.",
-          "Conservation of energy formula for closed systems: ΔU = Q - W",
-        ],
-        explanationText:
-          "The First Law of Thermodynamics is simply the principle of conservation of energy. It tells us that energy cannot be created out of nothing, nor can it be destroyed; it only changes forms. The change in the internal energy of a closed system, delta U, is exactly equal to the heat input, Q, minus the work done by the system, W.",
-      },
-      {
-        title: "Internal Energy (U) Defined",
-        points: [
-          "Microscopic Kinetic Energy: Translation, rotation, and vibration of molecules.",
-          "Microscopic Potential Energy: Intermolecular forces and chemical bonds.",
-          "Distinct from macroscopic kinetic or potential energy of the bulk system.",
-        ],
-        explanationText:
-          "To understand conservation, we look at Internal Energy, denoted by U. This represents the energy stored at the molecular level. It includes the kinetic energy of translating, rotating, and vibrating molecules, as well as the potential energy stored in chemical bonds and intermolecular forces.",
-      },
-      {
-        title: "Heat vs. Work Transfer",
-        points: [
-          "Heat (Q): Energy transfer driven strictly by a temperature gradient.",
-          "Work (W): Energy transfer associated with a mechanical force acting through a distance.",
-          "Sign Conventions: Heat input (+Q) and work output (+W) are standard positives.",
-        ],
-        explanationText:
-          "Remember, heat and work are energy in transit. Heat, Q, flows solely due to a temperature difference. Work, W, is energy transferred through forces acting across a distance. By standard convention, heat added to a system and work done by a system are treated as positive quantities.",
-      },
-    ],
-  },
-  {
-    id: "sec-3",
-    title: "The Second Law & Entropy",
-    duration: "15 mins",
-    completed: false,
-    description:
-      "Why does heat flow from hot to cold naturally? The Second Law of Thermodynamics explains spontaneous processes, heat engines, refrigerators, and introduces the abstract yet critical concept of Entropy. You will learn the ultimate limits of energy conversion efficiency.",
-    keyPoints: [
-      "Understand the Kelvin-Planck and Clausius statements of the Second Law",
-      "Learn how heat engines convert heat to work and calculate thermal efficiency",
-      "Define Entropy (S) as a measure of molecular disorder or randomness",
-      "State the Principle of Increase of Entropy for isolated systems",
-    ],
-    slides: [
-      {
-        title: "Directionality of Physical Processes",
-        points: [
-          "The First Law is silent on the direction of physical processes.",
-          "Spontaneous processes only occur in a single, specific direction.",
-          "Example: A cup of hot coffee cools down naturally, but cold coffee never absorbs ambient heat spontaneously.",
-        ],
-        explanationText:
-          "While the First Law tells us energy must be conserved, it doesn't limit the direction of processes. A cold cup of coffee could theoretically absorb heat from the room and become hot while satisfying energy conservation, yet this never happens spontaneously. The Second Law provides the physical criteria that govern the direction of energy flows.",
-      },
-      {
-        title: "Statements of the Second Law",
-        points: [
-          "Clausius Statement: Heat cannot flow spontaneously from a cooler body to a warmer body without external work.",
-          "Kelvin-Planck Statement: No heat engine operating in a cycle can convert 100% of absorbed heat into net work.",
-          "Thermal efficiency (η) is always strictly less than 1.",
-        ],
-        explanationText:
-          "Two main historical statements summarize this law. The Clausius statement states that heat cannot naturally flow uphill from a cold object to a hot object without inputting compressor work. The Kelvin-Planck statement states that no heat engine can convert all absorbed thermal energy into net mechanical work. Some heat must always be rejected to a low-temperature sink.",
-      },
-      {
-        title: "Defining Entropy (S)",
-        points: [
-          "Entropy (S) is a state property representing microscopic molecular disorder.",
-          "Mathematical definition for a internally reversible process: dS = (dQ / T)rev.",
-          "Principle of Increase of Entropy: The entropy of an isolated system always increases (ΔS ≥ 0).",
-        ],
-        explanationText:
-          "To quantify the Second Law, we introduce a state property called Entropy, denoted by S. Entropy is a measure of microscopic molecular disorder or randomness. For any reversible path, the change in entropy is heat transfer divided by absolute temperature. Crucially, the entropy of the universe, which is an isolated system, must always increase in real, irreversible processes.",
-      },
-    ],
-  },
-  {
-    id: "sec-4",
-    title: "The Carnot Cycle & Ideal Efficiency",
-    duration: "10 mins",
-    completed: false,
-    description:
-      "The Carnot cycle is the most efficient theoretical thermodynamic cycle. Operating between two thermal reservoirs, it consists of four reversible processes. In this section, we derive the maximum possible efficiency limit for heat engines.",
-    keyPoints: [
-      "Analyze the four processes: isothermal expansion, adiabatic expansion, isothermal compression, adiabatic compression",
-      "Derive the Carnot efficiency equation: η = 1 - (TL / TH)",
-      "Explain why 100% efficiency is physically impossible in the real world",
-      "Compare real-world engines to the Carnot limit",
-    ],
-    slides: [
-      {
-        title: "What is a Carnot Engine?",
-        points: [
-          "The most efficient theoretical power cycle operating between two temperatures.",
-          "Composed entirely of four internally reversible processes.",
-          "Serves as the absolute upper limit for any real heat engine.",
-        ],
-        explanationText:
-          "The Carnot cycle, proposed by French physicist Sadi Carnot, represents the absolute thermodynamic limit of heat engine efficiency. It is a theoretical cycle made of four reversible processes. No real engine operating between the same two temperatures can achieve a higher thermal efficiency.",
-      },
-      {
-        title: "The Four Carnot Processes",
-        points: [
-          "1-2: Reversible Isothermal Expansion (Heat addition at constant high temperature TH).",
-          "2-3: Reversible Adiabatic Expansion (Temperature drops from TH to TL).",
-          "3-4: Reversible Isothermal Compression (Heat rejection at constant low temperature TL).",
-          "4-1: Reversible Adiabatic Compression (Temperature rises back to TH).",
-        ],
-        explanationText:
-          "Let's review the four processes. First, heat is added isothermally at a high temperature, TH. Next, the gas expands adiabatically, doing work while dropping in temperature to TL. Third, heat is rejected isothermally at TL. Finally, the gas is compressed adiabatically, raising the temperature back to TH to complete the cycle.",
-      },
-      {
-        title: "The Carnot Efficiency Formula",
-        points: [
-          "Thermal efficiency equation: η = 1 - (TL / TH) (T in Kelvin).",
-          "Efficiency increases as TH increases or TL decreases.",
-          "100% efficiency is physically impossible unless the heat sink temperature TL reaches absolute zero.",
-        ],
-        explanationText:
-          "The Carnot efficiency is calculated using absolute temperatures in Kelvin. The formula is: thermal efficiency equals one minus TL over TH. This proves that real engines can never hit one hundred percent efficiency unless their exhaust operates at absolute zero temperature, which is physically impossible.",
-      },
-    ],
-  },
-  {
-    id: "sec-5",
-    title: "Pure Substances & Phase Changes",
-    duration: "14 mins",
-    completed: false,
-    description:
-      "Water can exist as a solid, liquid, or gas. In this section, we study how pure substances transition between phases. We examine T-v (Temperature-volume) and P-v diagrams, the critical point, triple point, and learn how to use thermodynamic property tables.",
-    keyPoints: [
-      "Define compressed liquid, saturated liquid, saturated mixture, saturated vapor, and superheated vapor",
-      "Understand the concept of quality (x) in a two-phase saturated mixture",
-      "Locate states on T-v, P-v, and P-T diagrams",
-      "Read thermodynamic property tables to find enthalpy, entropy, and specific volume",
-    ],
-    slides: [
-      {
-        title: "Pure Substances and Phase States",
-        points: [
-          "Pure Substance: Homogeneous chemical composition throughout (e.g. pure water, nitrogen).",
-          "Exists in three main phases: solid, liquid, and gas.",
-          "Phase state depends on temperature (T), pressure (P), and specific volume (v).",
-        ],
-        explanationText:
-          "A pure substance has a uniform chemical composition throughout. It can exist in solid, liquid, or gas phases. Depending on pressure and temperature, water can be a subcooled liquid, a saturated mixture boiling in equilibrium, or a dry superheated vapor.",
-      },
-      {
-        title: "Quality (x) of Saturated Mixtures",
-        points: [
-          "Saturated Mixture: Liquid and vapor coexisting in equilibrium at Tsat and Psat.",
-          "Quality (x): Mass of vapor divided by total mass of the mixture. (x = mvapor / mtotal).",
-          "Quality ranges from 0 (saturated liquid) to 1 (saturated vapor).",
-        ],
-        explanationText:
-          "During boiling, a mixture contains both liquid and vapor. We define quality, x, as the ratio of vapor mass to the total mass of the mixture. Quality ranges from zero, indicating a pure saturated liquid about to boil, to one, indicating a pure saturated vapor about to condense.",
-      },
-      {
-        title: "Reading Property Tables",
-        points: [
-          "We use physical property tables to look up state values for enthalpy (h), entropy (s), and volume (v).",
-          "Superheated Table: Look up T and P directly.",
-          "Saturated Table: Use quality (x) to interpolate: y = yf + x * yfg.",
-        ],
-        explanationText:
-          "Because real substances do not follow ideal gas equations near phase changes, engineers use thermodynamic tables. We look up enthalpy, internal energy, or entropy using temperature or pressure. If the state is a mixture, we use quality, x, to interpolate between the liquid and vapor values.",
-      },
-    ],
-  },
-];
-
 export default function CoursePage({
   params,
 }: {
@@ -278,26 +43,14 @@ export default function CoursePage({
   const isLiveCourse = isUuid(courseId);
 
   // State management
-  const [sections, setSections] = useState<CourseSection[]>(
-    isLiveCourse ? [] : initialSections,
-  );
-  const [courseTitle, setCourseTitle] = useState(
-    isLiveCourse ? "Loading course…" : "Thermodynamics 101",
-  );
-  const [courseSummary, setCourseSummary] = useState(
-    isLiveCourse
-      ? ""
-      : "Master the thermodynamic laws, entropy calculations, and pure substance state transitions.",
-  );
-  const [learnerLevelLabel, setLearnerLevelLabel] = useState(
-    isLiveCourse ? "" : "Intermediate",
-  );
+  const [sections, setSections] = useState<CourseSection[]>([]);
+  const [courseTitle, setCourseTitle] = useState("Loading course…");
+  const [courseSummary, setCourseSummary] = useState("");
+  const [learnerLevelLabel, setLearnerLevelLabel] = useState("");
   const [courseLoadError, setCourseLoadError] = useState<string | null>(null);
   const courseQuery = useCourse(courseId);
   const isCourseLoading = isLiveCourse && courseQuery.isLoading;
-  const [activeSectionId, setActiveSectionId] = useState<string>(
-    isLiveCourse ? "" : "sec-3",
-  );
+  const [activeSectionId, setActiveSectionId] = useState<string>("");
 
   // Dynamic active slide index (0-indexed)
   const [activeSlideIdx, setActiveSlideIdx] = useState<number>(0);
@@ -307,7 +60,6 @@ export default function CoursePage({
     activeSlideIdxRef.current = activeSlideIdx;
   }, [activeSlideIdx]);
 
-  // Full Screen Classroom Play States
   const [isPlayingClass, setIsPlayingClass] = useState<boolean>(false);
   const [language, setLanguage] = useState<string>("english");
   const [isTTSLoading, setIsTTSLoading] = useState<boolean>(false);
@@ -323,22 +75,8 @@ export default function CoursePage({
   >({});
   const [isSlideSelectorOpen, setIsSlideSelectorOpen] =
     useState<boolean>(false);
-  const [courseSources, setCourseSources] = useState<CourseSourceLink[]>(
-    isLiveCourse
-      ? []
-      : [
-          {
-            title: "NASA — Thermodynamics fundamentals",
-            url: "https://www.grc.nasa.gov/www/k-12/airplane/thermo.html",
-          },
-          {
-            title: "HyperPhysics — Heat and temperature",
-            url: "http://hyperphysics.phy-astr.gsu.edu/hbase/thermo.html",
-          },
-        ],
-  );
+  const [courseSources, setCourseSources] = useState<CourseSourceLink[]>([]);
 
-  // Audio player reference (lecture)
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const activeSection =
@@ -620,7 +358,9 @@ export default function CoursePage({
       audioRef.current = audio;
 
       audio.onended = () => {
-        console.log(`[page.tsx] Audio for slide ${activeSlideIdxRef.current} ended.`);
+        console.log(
+          `[page.tsx] Audio for slide ${activeSlideIdxRef.current} ended.`,
+        );
         // Auto advance slide if not last
         if (activeSlideIdxRef.current < activeSection.slides.length - 1) {
           const nextIdx = activeSlideIdxRef.current + 1;
@@ -629,7 +369,9 @@ export default function CoursePage({
           playSlideAudio(activeSection.slides[nextIdx]);
         } else {
           // Finished whole section
-          console.log("[page.tsx] Reached end of section. Marking as completed.");
+          console.log(
+            "[page.tsx] Reached end of section. Marking as completed.",
+          );
           setIsClassEnded(true);
           setSections((prev) =>
             prev.map((sec) =>
@@ -645,7 +387,9 @@ export default function CoursePage({
         }
       };
 
-      console.log(`[page.tsx] Playing audio for slide ${activeSlideIdxRef.current}`);
+      console.log(
+        `[page.tsx] Playing audio for slide ${activeSlideIdxRef.current}`,
+      );
       audio.play().catch((err) => {
         console.error("Audio autoplay error:", err);
         setTtsFallback(true);
@@ -1107,16 +851,16 @@ export default function CoursePage({
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 bg-neutral-50 text-neutral-900 flex flex-col p-6 md:p-8 select-none"
           >
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
+            <div className="flex items-center justify-between pb-4">
               <div className="flex items-center gap-4">
                 <button
                   onClick={closeAudioClass}
-                  className="inline-flex items-center py-4 px-4 bg-white hover:bg-neutral-100 text-sm font-bold text-neutral-500 hover:text-neutral-800 rounded-xl transition-all cursor-pointer border border-neutral-200/60"
+                  className="inline-flex items-center py-4 px-4 bg-neutral-50 hover:bg-neutral-100 text-sm font-bold text-neutral-500 hover:text-neutral-800 rounded-full transition-all cursor-pointer border border-neutral-200/60"
                 >
                   <XIcon size={16} weight="bold" />
                 </button>
                 <div>
-                  <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">
+                  <h4 className="text-xs font-semibold text-neutral-400 tracking-widest">
                     Topic
                   </h4>
                   <p className="text-sm font-bold text-neutral-800">
@@ -1125,7 +869,7 @@ export default function CoursePage({
                 </div>
               </div>
 
-              <button
+              {/* <button
                 onClick={() => setIsSlideSelectorOpen((prev) => !prev)}
                 className={`p-3 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center border border-neutral-200/60 ${
                   isSlideSelectorOpen
@@ -1135,7 +879,7 @@ export default function CoursePage({
                 title="Select Slide"
               >
                 <SquaresFourIcon size={20} weight="bold" />
-              </button>
+              </button> */}
             </div>
 
             <div className="grow grid grid-cols-1 lg:grid-cols-12 gap-5 my-6 overflow-hidden min-h-0 relative">
@@ -1321,11 +1065,17 @@ export default function CoursePage({
                               setIsClassEnded(true);
                               setSections((prev) =>
                                 prev.map((sec) =>
-                                  sec.id === activeSection.id ? { ...sec, completed: true } : sec,
+                                  sec.id === activeSection.id
+                                    ? { ...sec, completed: true }
+                                    : sec,
                                 ),
                               );
                               if (isLiveCourse) {
-                                void updateModuleProgress(courseId, activeSection.id, true).catch(() => {});
+                                void updateModuleProgress(
+                                  courseId,
+                                  activeSection.id,
+                                  true,
+                                ).catch(() => {});
                               }
                             }}
                           >

@@ -184,6 +184,8 @@ export default function CourseTutorPanel({
   const shouldReduceMotion = useReducedMotion();
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastErrorRef = useRef<string | null>(null);
   const draftRef = useRef(draft);
   const isAnsweringRef = useRef(isAnswering);
   const [isRecording, setIsRecording] = useState(false);
@@ -235,37 +237,52 @@ export default function CourseTutorPanel({
     recognition.interimResults = true;
     recognition.lang = "en-US";
     let shouldRestart = true;
+
     recognition.onstart = () => {
       console.log("[CourseTutorPanel] SpeechRecognition started. isAwake:", isAwakeRef.current);
       setIsRecording(true);
       setSpeechError(null);
+      lastErrorRef.current = null;
       shouldRestart = true;
     };
+
     recognition.onend = () => {
-      console.log("[CourseTutorPanel] SpeechRecognition ended. Restarting if not answering...");
+      console.log("[CourseTutorPanel] SpeechRecognition ended. isAwake:", isAwakeRef.current);
       setIsRecording(false);
-      if (!isAnsweringRef.current && shouldRestart) {
-        try { 
-          recognition.start(); 
-          console.log("[CourseTutorPanel] Successfully auto-restarted SpeechRecognition.");
-        } catch (err) {
-          console.error("[CourseTutorPanel] Failed to auto-restart SpeechRecognition:", err);
-        }
+      
+      // Auto-restart only if panel is open, active, and we are not currently answering.
+      if (isOpenRef.current && isAwakeRef.current && !isAnsweringRef.current && shouldRestart) {
+        const restartDelay = lastErrorRef.current === "aborted" ? 3000 : 0;
+        
+        if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+        
+        restartTimerRef.current = setTimeout(() => {
+          if (!isOpenRef.current || !isAwakeRef.current || isAnsweringRef.current || !shouldRestart) return;
+          try { 
+            recognition.start(); 
+            console.log("[CourseTutorPanel] Successfully auto-restarted SpeechRecognition.");
+          } catch (err) {
+            console.error("[CourseTutorPanel] Failed to auto-restart SpeechRecognition:", err);
+          }
+        }, restartDelay);
       } else {
-        console.log(`[CourseTutorPanel] Did not restart. isAnswering: ${isAnsweringRef.current}, shouldRestart: ${shouldRestart}`);
+        console.log(`[CourseTutorPanel] Did not restart. isOpen: ${isOpenRef.current}, isAwake: ${isAwakeRef.current}, isAnswering: ${isAnsweringRef.current}`);
       }
       shouldRestart = true;
     };
+
     recognition.onerror = (event) => {
       console.warn("[CourseTutorPanel] SpeechRecognition error:", event.error);
+      lastErrorRef.current = event.error;
       if (["not-allowed", "audio-capture", "not-supported"].includes(event.error)) {
         shouldRestart = false;
         setSpeechError(event.error === "not-allowed" ? "Microphone access is blocked." : `Microphone error: ${event.error}`);
         setIsRecording(false);
       } else if (event.error === "aborted") {
-        console.log("[CourseTutorPanel] Speech recognition aborted. Will attempt restart.");
+        console.log("[CourseTutorPanel] Speech recognition aborted. Will attempt restart with delay if active.");
       }
     };
+
     recognition.onresult = (event) => {
       let finalText = "";
       let interimText = "";
@@ -280,62 +297,82 @@ export default function CourseTutorPanel({
         }
       }
 
-      console.log(`[CourseTutorPanel] Transcribed - Final: "${finalText}" | Interim: "${interimText}" | isAwake: ${isAwakeRef.current}`);
+      console.log(`[CourseTutorPanel] Transcribed - Final: "${finalText}" | Interim: "${interimText}"`);
 
-      if (!isAwakeRef.current) {
-        const lowerText = (finalText || interimText).toLowerCase();
-        if (lowerText.includes("question") || lowerText.includes("grasp") || lowerText.includes("wait")) {
-          console.log("[CourseTutorPanel] Wake word detected in text:", lowerText);
-          setIsAwake(true);
-          onDraftChangeRef.current("");
-          if (!isOpenRef.current) onToggleRef.current();
-        }
-      } else {
-        if (finalText.trim()) {
-          const newDraft = `${draftRef.current} ${finalText}`.trim();
-          console.log("[CourseTutorPanel] Appending final text to draft:", newDraft);
-          onDraftChangeRef.current(newDraft);
-        }
-        setInterimTranscript(interimText.trim());
-
-        // Silence detection logic
-        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-        console.log("[CourseTutorPanel] Silence timer reset. Waiting 2s...");
-        silenceTimerRef.current = setTimeout(() => {
-          console.log("[CourseTutorPanel] Silence timer fired! 2 seconds passed.");
-          if (!isAnsweringRef.current) {
-            setInterimTranscript("");
-            const finalDraft = `${draftRef.current} ${finalText}`.trim();
-            if (finalDraft) {
-              console.log("[CourseTutorPanel] Submitting voice question:", finalDraft);
-              onSubmitQuestionRef.current(finalDraft);
-              setIsAwake(false);
-            } else {
-               console.log("[CourseTutorPanel] Draft is empty, going back to sleep.");
-               setIsAwake(false);
-            }
-          }
-        }, 2000);
+      if (finalText.trim()) {
+        const newDraft = `${draftRef.current} ${finalText}`.trim();
+        console.log("[CourseTutorPanel] Appending final text to draft:", newDraft);
+        onDraftChangeRef.current(newDraft);
       }
+      setInterimTranscript(interimText.trim());
+
+      // Silence detection logic
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      console.log("[CourseTutorPanel] Silence timer reset. Waiting 2s...");
+      silenceTimerRef.current = setTimeout(() => {
+        console.log("[CourseTutorPanel] Silence timer fired! 2 seconds passed.");
+        if (!isAnsweringRef.current) {
+          setInterimTranscript("");
+          const finalDraft = `${draftRef.current} ${finalText}`.trim();
+          if (finalDraft) {
+            console.log("[CourseTutorPanel] Submitting voice question:", finalDraft);
+            onSubmitQuestionRef.current(finalDraft);
+            setIsAwake(false);
+          } else {
+             console.log("[CourseTutorPanel] Draft is empty, going back to sleep.");
+             setIsAwake(false);
+          }
+        }
+      }, 2000);
     };
 
     recognitionRef.current = recognition;
-    
-    // Auto-start on mount
-    console.log("[CourseTutorPanel] Mounting SpeechRecognition...");
-    try { 
-      recognition.start(); 
-      console.log("[CourseTutorPanel] Auto-started successfully.");
-    } catch (err) {
-      console.error("[CourseTutorPanel] Auto-start failed on mount:", err);
-    }
 
     return () => {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
       recognition.abort();
       recognitionRef.current = null;
     };
   }, []);
+
+  // Sync isOpen state to microphone active state (isAwake)
+  useEffect(() => {
+    if (isOpen) {
+      setIsAwake(true);
+      onDraftChangeRef.current("");
+    } else {
+      setIsAwake(false);
+      setInterimTranscript("");
+    }
+  }, [isOpen]);
+
+  // Reactive control effect for starting/stopping the microphone
+  useEffect(() => {
+    if (!speechSupported || !recognitionRef.current) return;
+
+    const shouldListen = isOpen && isAwake && !isAnswering;
+
+    if (shouldListen) {
+      if (!isRecording) {
+        console.log("[CourseTutorPanel] Starting SpeechRecognition (open & active)...");
+        try {
+          recognitionRef.current.start();
+        } catch (err) {
+          console.warn("[CourseTutorPanel] SpeechRecognition start failed:", err);
+        }
+      }
+    } else {
+      if (isRecording) {
+        console.log("[CourseTutorPanel] Stopping SpeechRecognition (closed or idle)...");
+        try {
+          recognitionRef.current.stop();
+        } catch (err) {
+          // Already stopped
+        }
+      }
+    }
+  }, [isOpen, isAwake, isAnswering, isRecording, speechSupported]);
 
   const toggleMic = () => {
     if (!speechSupported) return;
@@ -481,11 +518,7 @@ export default function CourseTutorPanel({
                   </p>
                 </div>
 
-                {!isAwake && isRecording && (
-                  <p className="text-center text-[10px] uppercase font-bold tracking-widest text-neutral-400 mt-2">
-                    Listening for "I have a question"...
-                  </p>
-                )}
+
 
                 {speechError && (
                   <p className="rounded-2xl border border-danger-500/20 bg-danger-500/10 px-4 py-3 text-sm text-danger-600 mt-2">

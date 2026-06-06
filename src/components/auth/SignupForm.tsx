@@ -6,6 +6,7 @@ import { useState } from "react";
 import LogoIcon from "@/components/Logo";
 import { GoogleIcon, VisibilityIcon } from "@/components/auth/icons";
 import { signInWithGoogle, signUpWithEmail } from "@/lib/auth/client";
+import Spinner from "@/components/Spinner";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -139,11 +140,18 @@ export default function SignupForm() {
             </div>
 
             <button
-              className="mt-5 h-10 w-full rounded-sm bg-[#2563eb] text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-sm bg-[#2563eb] text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
               disabled={isSubmitting}
               type="submit"
             >
-              {isSubmitting ? "Creating account..." : "Sign Up"}
+              {isSubmitting ? (
+                <>
+                  <Spinner className="text-white" />
+                  <span>Creating account...</span>
+                </>
+              ) : (
+                "Sign Up"
+              )}
             </button>
           </form>
 

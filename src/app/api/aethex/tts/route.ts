@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
     const {
       text,
       language = "english",
-      voice_id = "8466fb57-9f6b-53ad-ba5a-9729617f761c",
+      voice_id = "9ac12fd0-9024-506d-805a-9ff50bbf97a6",
       streaming = false,
     } = await req.json();
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         text,
         language,
         streaming,
-        voice_id: "8466fb57-9f6b-53ad-ba5a-9729617f761c",
+        voice_id: "9ac12fd0-9024-506d-805a-9ff50bbf97a6",
       }),
     });
 
