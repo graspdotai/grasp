@@ -131,7 +131,7 @@ export function DiagramPanel({
   if (error || !wiki?.thumbnail) return null;
 
   const isDark = variant === "dark";
-  const maxH = large ? 500 : 260;
+  const maxH = large ? 420 : 260;
 
   return (
     <div
@@ -374,7 +374,7 @@ function BulletsLayout({
         ))}
       </div>
       {diagramQuery && (
-        <div className="w-full lg:w-60 xl:w-72 shrink-0">
+        <div className="w-full lg:w-60 xl:w-80 shrink-0">
           <DiagramPanel diagramQuery={diagramQuery} variant={variant} />
         </div>
       )}
