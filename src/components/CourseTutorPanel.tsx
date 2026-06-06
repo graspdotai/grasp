@@ -72,7 +72,10 @@ function VoiceBars({ active }: { active: boolean }) {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div className="flex h-12 items-center justify-center gap-1.5" aria-hidden="true">
+    <div
+      className="flex h-12 items-center justify-center gap-1.5"
+      aria-hidden="true"
+    >
       {BAR_HEIGHTS.map((height, index) => (
         <motion.span
           key={`${height}-${index}`}
@@ -94,7 +97,13 @@ function VoiceBars({ active }: { active: boolean }) {
   );
 }
 
-function AudioReply({ message, onPlayStateChange }: { message: TutorMessage, onPlayStateChange?: (playing: boolean) => void }) {
+function AudioReply({
+  message,
+  onPlayStateChange,
+}: {
+  message: TutorMessage;
+  onPlayStateChange?: (playing: boolean) => void;
+}) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -108,7 +117,10 @@ function AudioReply({ message, onPlayStateChange }: { message: TutorMessage, onP
     const audio = new Audio(message.audioUrl);
     audioRef.current = audio;
     audio.onended = () => setPlaying(false);
-    audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+    audio
+      .play()
+      .then(() => setPlaying(true))
+      .catch(() => setPlaying(false));
 
     return () => {
       audio.pause();
@@ -126,7 +138,10 @@ function AudioReply({ message, onPlayStateChange }: { message: TutorMessage, onP
       return;
     }
 
-    audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+    audio
+      .play()
+      .then(() => setPlaying(true))
+      .catch(() => setPlaying(false));
   };
 
   if (message.audioLoading) {
@@ -157,10 +172,16 @@ function AudioReply({ message, onPlayStateChange }: { message: TutorMessage, onP
           aria-label={playing ? "Pause spoken answer" : "Play spoken answer"}
           className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors duration-150 ease-out hover:bg-primary-600"
         >
-          {playing ? <PauseIcon size={17} weight="fill" /> : <PlayIcon size={17} weight="fill" />}
+          {playing ? (
+            <PauseIcon size={17} weight="fill" />
+          ) : (
+            <PlayIcon size={17} weight="fill" />
+          )}
         </button>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-neutral-900">Tutor answered out loud</p>
+          <p className="text-sm font-semibold text-neutral-900">
+            Tutor answered out loud
+          </p>
           <p className="truncate text-xs text-neutral-500">Audio response</p>
         </div>
         <VoiceBars active={playing} />
@@ -221,7 +242,8 @@ export default function CourseTutorPanel({
     onRecordingStateChangeRef.current?.(isAwake);
   }, [isAwake]);
 
-  const transcript = `${draft}${interimTranscript ? ` ${interimTranscript}` : ""}`.trim();
+  const transcript =
+    `${draft}${interimTranscript ? ` ${interimTranscript}` : ""}`.trim();
 
   useEffect(() => {
     const SpeechRecognition =
@@ -239,7 +261,10 @@ export default function CourseTutorPanel({
     let shouldRestart = true;
 
     recognition.onstart = () => {
-      console.log("[CourseTutorPanel] SpeechRecognition started. isAwake:", isAwakeRef.current);
+      console.log(
+        "[CourseTutorPanel] SpeechRecognition started. isAwake:",
+        isAwakeRef.current,
+      );
       setIsRecording(true);
       setSpeechError(null);
       lastErrorRef.current = null;
@@ -247,26 +272,47 @@ export default function CourseTutorPanel({
     };
 
     recognition.onend = () => {
-      console.log("[CourseTutorPanel] SpeechRecognition ended. isAwake:", isAwakeRef.current);
+      console.log(
+        "[CourseTutorPanel] SpeechRecognition ended. isAwake:",
+        isAwakeRef.current,
+      );
       setIsRecording(false);
-      
+
       // Auto-restart only if panel is open, active, and we are not currently answering.
-      if (isOpenRef.current && isAwakeRef.current && !isAnsweringRef.current && shouldRestart) {
+      if (
+        isOpenRef.current &&
+        isAwakeRef.current &&
+        !isAnsweringRef.current &&
+        shouldRestart
+      ) {
         const restartDelay = lastErrorRef.current === "aborted" ? 3000 : 0;
-        
+
         if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
-        
+
         restartTimerRef.current = setTimeout(() => {
-          if (!isOpenRef.current || !isAwakeRef.current || isAnsweringRef.current || !shouldRestart) return;
-          try { 
-            recognition.start(); 
-            console.log("[CourseTutorPanel] Successfully auto-restarted SpeechRecognition.");
+          if (
+            !isOpenRef.current ||
+            !isAwakeRef.current ||
+            isAnsweringRef.current ||
+            !shouldRestart
+          )
+            return;
+          try {
+            recognition.start();
+            console.log(
+              "[CourseTutorPanel] Successfully auto-restarted SpeechRecognition.",
+            );
           } catch (err) {
-            console.error("[CourseTutorPanel] Failed to auto-restart SpeechRecognition:", err);
+            console.error(
+              "[CourseTutorPanel] Failed to auto-restart SpeechRecognition:",
+              err,
+            );
           }
         }, restartDelay);
       } else {
-        console.log(`[CourseTutorPanel] Did not restart. isOpen: ${isOpenRef.current}, isAwake: ${isAwakeRef.current}, isAnswering: ${isAnsweringRef.current}`);
+        console.log(
+          `[CourseTutorPanel] Did not restart. isOpen: ${isOpenRef.current}, isAwake: ${isAwakeRef.current}, isAnswering: ${isAnsweringRef.current}`,
+        );
       }
       shouldRestart = true;
     };
@@ -274,12 +320,20 @@ export default function CourseTutorPanel({
     recognition.onerror = (event) => {
       console.warn("[CourseTutorPanel] SpeechRecognition error:", event.error);
       lastErrorRef.current = event.error;
-      if (["not-allowed", "audio-capture", "not-supported"].includes(event.error)) {
+      if (
+        ["not-allowed", "audio-capture", "not-supported"].includes(event.error)
+      ) {
         shouldRestart = false;
-        setSpeechError(event.error === "not-allowed" ? "Microphone access is blocked." : `Microphone error: ${event.error}`);
+        setSpeechError(
+          event.error === "not-allowed"
+            ? "Microphone access is blocked."
+            : `Microphone error: ${event.error}`,
+        );
         setIsRecording(false);
       } else if (event.error === "aborted") {
-        console.log("[CourseTutorPanel] Speech recognition aborted. Will attempt restart with delay if active.");
+        console.log(
+          "[CourseTutorPanel] Speech recognition aborted. Will attempt restart with delay if active.",
+        );
       }
     };
 
@@ -287,7 +341,11 @@ export default function CourseTutorPanel({
       let finalText = "";
       let interimText = "";
 
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+      for (
+        let index = event.resultIndex;
+        index < event.results.length;
+        index += 1
+      ) {
         const result = event.results[index];
         const text = result[0]?.transcript ?? "";
         if (result.isFinal) {
@@ -297,11 +355,16 @@ export default function CourseTutorPanel({
         }
       }
 
-      console.log(`[CourseTutorPanel] Transcribed - Final: "${finalText}" | Interim: "${interimText}"`);
+      console.log(
+        `[CourseTutorPanel] Transcribed - Final: "${finalText}" | Interim: "${interimText}"`,
+      );
 
       if (finalText.trim()) {
         const newDraft = `${draftRef.current} ${finalText}`.trim();
-        console.log("[CourseTutorPanel] Appending final text to draft:", newDraft);
+        console.log(
+          "[CourseTutorPanel] Appending final text to draft:",
+          newDraft,
+        );
         onDraftChangeRef.current(newDraft);
       }
       setInterimTranscript(interimText.trim());
@@ -310,17 +373,24 @@ export default function CourseTutorPanel({
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       console.log("[CourseTutorPanel] Silence timer reset. Waiting 2s...");
       silenceTimerRef.current = setTimeout(() => {
-        console.log("[CourseTutorPanel] Silence timer fired! 2 seconds passed.");
+        console.log(
+          "[CourseTutorPanel] Silence timer fired! 2 seconds passed.",
+        );
         if (!isAnsweringRef.current) {
           setInterimTranscript("");
           const finalDraft = `${draftRef.current} ${finalText}`.trim();
           if (finalDraft) {
-            console.log("[CourseTutorPanel] Submitting voice question:", finalDraft);
+            console.log(
+              "[CourseTutorPanel] Submitting voice question:",
+              finalDraft,
+            );
             onSubmitQuestionRef.current(finalDraft);
             setIsAwake(false);
           } else {
-             console.log("[CourseTutorPanel] Draft is empty, going back to sleep.");
-             setIsAwake(false);
+            console.log(
+              "[CourseTutorPanel] Draft is empty, going back to sleep.",
+            );
+            setIsAwake(false);
           }
         }
       }, 2000);
@@ -355,16 +425,23 @@ export default function CourseTutorPanel({
 
     if (shouldListen) {
       if (!isRecording) {
-        console.log("[CourseTutorPanel] Starting SpeechRecognition (open & active)...");
+        console.log(
+          "[CourseTutorPanel] Starting SpeechRecognition (open & active)...",
+        );
         try {
           recognitionRef.current.start();
         } catch (err) {
-          console.warn("[CourseTutorPanel] SpeechRecognition start failed:", err);
+          console.warn(
+            "[CourseTutorPanel] SpeechRecognition start failed:",
+            err,
+          );
         }
       }
     } else {
       if (isRecording) {
-        console.log("[CourseTutorPanel] Stopping SpeechRecognition (closed or idle)...");
+        console.log(
+          "[CourseTutorPanel] Stopping SpeechRecognition (closed or idle)...",
+        );
         try {
           recognitionRef.current.stop();
         } catch (err) {
@@ -387,7 +464,9 @@ export default function CourseTutorPanel({
       setIsAwake(true);
       onDraftChange("");
       if (!isRecording) {
-        try { recognitionRef.current?.start() } catch {}
+        try {
+          recognitionRef.current?.start();
+        } catch {}
       }
     }
   };
@@ -430,32 +509,17 @@ export default function CourseTutorPanel({
               }
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={
-                shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }
+                shouldReduceMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: 10, scale: 0.98 }
               }
-              transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: "easeOut" }}
+              transition={{
+                duration: shouldReduceMotion ? 0 : 0.2,
+                ease: "easeOut",
+              }}
               aria-label="Voice question recorder"
               className="w-full overflow-hidden rounded-3xl border border-neutral-200 bg-white text-neutral-900 shadow-2xl shadow-black/10 backdrop-blur-xl"
             >
-              <div className="flex items-center gap-3 border-b border-neutral-100 px-4 py-3">
-                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10">
-                  <span className="block origin-center scale-[0.38]">
-                    <LogoIcon />
-                  </span>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-neutral-900">Ask by voice</p>
-                  <p className="truncate text-xs text-neutral-500">{sectionTitle}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onToggle}
-                  aria-label="Close voice questions"
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 transition-colors duration-150 ease-out hover:bg-neutral-100 hover:text-neutral-700"
-                >
-                  <XIcon size={17} weight="bold" />
-                </button>
-              </div>
-
               <div className="space-y-4 px-4 py-4">
                 <div className="rounded-3xl border border-neutral-100 bg-neutral-50 px-4 py-5 text-center">
                   <button
@@ -483,12 +547,20 @@ export default function CourseTutorPanel({
                         />
                         <motion.div
                           animate={{ height: ["12px", "20px", "12px"] }}
-                          transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}
+                          transition={{
+                            repeat: Infinity,
+                            duration: 1,
+                            delay: 0.2,
+                          }}
                           className="w-1.5 bg-white rounded-full"
                         />
                         <motion.div
                           animate={{ height: ["8px", "16px", "8px"] }}
-                          transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}
+                          transition={{
+                            repeat: Infinity,
+                            duration: 1,
+                            delay: 0.4,
+                          }}
                           className="w-1.5 bg-white rounded-full"
                         />
                       </div>
@@ -498,7 +570,6 @@ export default function CourseTutorPanel({
                   </button>
 
                   <div className="mt-4">
-                    <VoiceBars active={isRecording || isAnswering} />
                     <p className="mt-2 text-sm font-medium text-neutral-600">
                       {isRecording
                         ? "Listening..."
@@ -514,11 +585,10 @@ export default function CourseTutorPanel({
                     Heard
                   </p>
                   <p className="mt-2 text-sm leading-relaxed text-neutral-700">
-                    {transcript || "Your question will appear here while you speak."}
+                    {transcript ||
+                      "Your question will appear here while you speak."}
                   </p>
                 </div>
-
-
 
                 {speechError && (
                   <p className="rounded-2xl border border-danger-500/20 bg-danger-500/10 px-4 py-3 text-sm text-danger-600 mt-2">
@@ -526,11 +596,15 @@ export default function CourseTutorPanel({
                   </p>
                 )}
 
-                {tutorMessage && (tutorMessage.audioLoading || tutorMessage.audioUrl) && (
-                  <div className="pt-2">
-                    <AudioReply message={tutorMessage} onPlayStateChange={onTutorAudioPlayStateChange} />
-                  </div>
-                )}
+                {tutorMessage &&
+                  (tutorMessage.audioLoading || tutorMessage.audioUrl) && (
+                    <div className="pt-2">
+                      <AudioReply
+                        message={tutorMessage}
+                        onPlayStateChange={onTutorAudioPlayStateChange}
+                      />
+                    </div>
+                  )}
               </div>
             </motion.section>
           )}
@@ -542,7 +616,10 @@ export default function CourseTutorPanel({
           onClick={onToggle}
           aria-expanded={isOpen}
           aria-label={isOpen ? "Hide voice questions" : "Open voice questions"}
-          transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: [0.4, 0, 0.2, 1] }}
+          transition={{
+            duration: shouldReduceMotion ? 0 : 0.22,
+            ease: [0.4, 0, 0.2, 1],
+          }}
           className={`flex h-14 items-center justify-center overflow-hidden rounded-full shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 ${
             isOpen
               ? "w-14 bg-neutral-100 text-neutral-800 shadow-black/10 hover:bg-neutral-200"
@@ -553,10 +630,21 @@ export default function CourseTutorPanel({
             {isOpen ? (
               <motion.span
                 key="x"
-                initial={shouldReduceMotion ? {} : { scale: 0.6, opacity: 0, rotate: -45 }}
+                initial={
+                  shouldReduceMotion
+                    ? {}
+                    : { scale: 0.6, opacity: 0, rotate: -45 }
+                }
                 animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                exit={shouldReduceMotion ? {} : { scale: 0.6, opacity: 0, rotate: 45 }}
-                transition={{ duration: shouldReduceMotion ? 0 : 0.15, ease: "easeOut" }}
+                exit={
+                  shouldReduceMotion
+                    ? {}
+                    : { scale: 0.6, opacity: 0, rotate: 45 }
+                }
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.15,
+                  ease: "easeOut",
+                }}
                 className="flex items-center justify-center"
               >
                 <XIcon size={20} weight="bold" />
@@ -567,7 +655,10 @@ export default function CourseTutorPanel({
                 initial={shouldReduceMotion ? {} : { opacity: 0, x: 6 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={shouldReduceMotion ? {} : { opacity: 0, x: 6 }}
-                transition={{ duration: shouldReduceMotion ? 0 : 0.15, ease: "easeOut" }}
+                transition={{
+                  duration: shouldReduceMotion ? 0 : 0.15,
+                  ease: "easeOut",
+                }}
                 className="flex items-center gap-3"
               >
                 <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary shadow-md shadow-primary/30">
