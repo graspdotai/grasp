@@ -1,6 +1,5 @@
 "use client";
 
-import { SignOutIcon } from "@phosphor-icons/react";
 import Modal from "@/components/modals/Modal";
 
 interface SignOutModalProps {
@@ -19,9 +18,6 @@ export default function SignOutModal({
   return (
     <Modal open={open} onClose={isLoading ? undefined! : onClose} disableBackdropClose={isLoading} maxWidth="max-w-xs">
       <div className="flex flex-col items-center gap-4 pb-2 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100">
-          <SignOutIcon size={28} weight="bold" className="text-neutral-500" />
-        </div>
         <div className="flex flex-col gap-1">
           <h2 className="text-base font-semibold text-neutral-900">Sign out?</h2>
           <p className="text-sm text-neutral-500">You'll need to sign back in to access your courses.</p>
