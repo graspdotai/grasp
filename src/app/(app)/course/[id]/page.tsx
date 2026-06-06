@@ -35,6 +35,7 @@ import {
 } from "@/lib/courseApi";
 import { useCourse } from "@/hooks/useCourse";
 import { sourcesForSection, type CourseSourceLink } from "@/lib/sectionSources";
+import { toast } from "sonner";
 
 export default function CoursePage({
   params,
@@ -304,6 +305,7 @@ export default function CoursePage({
 
       if (res.ok) speakAnswer(answerText, msgId, sectionId);
     } catch {
+      toast.error("Failed to reach the tutor");
       setQuestionThreads((prev) => ({
         ...prev,
         [sectionId]: [

@@ -18,6 +18,7 @@ import Spinner from "@/components/Spinner";
 import { createCourse } from "@/lib/courseApi";
 import { loadOnboardingProfile } from "@/lib/onboardingStorage";
 import { getLocalUserId } from "@/lib/userSession";
+import { toast } from "sonner";
 
 const LEVELS = [
   { value: "beginner", label: "Beginner" },
@@ -56,7 +57,6 @@ export default function NewCoursePage() {
   const [goal, setGoal] = useState("");
   const [learnerLevel, setLearnerLevel] =
     useState<(typeof LEVELS)[number]["value"]>("beginner");
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [onboarding, setOnboarding] = useState(loadOnboardingProfile());
@@ -73,7 +73,6 @@ export default function NewCoursePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     setIsSubmitting(true);
     setGenerationStatus("Analyzing your topic and researching sources...");
 
@@ -89,9 +88,10 @@ export default function NewCoursePage() {
       }, (progress) => {
         setGenerationStatus(progress.message);
       });
+      toast.success("Course created successfully!");
       router.push(`/course/${data.course.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
       setIsSubmitting(false);
     }
   }
@@ -278,12 +278,6 @@ export default function NewCoursePage() {
                   })}
                 </div>
               </div>
-
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 leading-relaxed">
-                  {error}
-                </p>
-              )}
 
               {/* Submit Button */}
               <div className="pt-4 ml-auto">

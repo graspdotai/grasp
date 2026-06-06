@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { deleteCourse, type UserCourseSummary } from "@/lib/courseApi";
 import { queryKeys } from "@/lib/queryKeys";
 import { getLocalUserId } from "@/lib/userSession";
+import { toast } from "sonner";
 
 interface CourseCardProps {
   course: UserCourseSummary;
@@ -16,7 +17,6 @@ interface CourseCardProps {
 export default function CourseCard({ course }: CourseCardProps) {
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -32,7 +32,6 @@ export default function CourseCard({ course }: CourseCardProps) {
     }
 
     setIsDeleting(true);
-    setError(null);
 
     try {
       const userId = getLocalUserId() ?? undefined;
@@ -43,8 +42,9 @@ export default function CourseCard({ course }: CourseCardProps) {
         });
       }
       void queryClient.removeQueries({ queryKey: queryKeys.course(course.id) });
+      toast.success("Course deleted successfully");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      toast.error(err instanceof Error ? err.message : "Delete failed");
       setIsDeleting(false);
     }
   }
@@ -84,8 +84,6 @@ export default function CourseCard({ course }: CourseCardProps) {
           }) : ""}
         </p>
       </Link>
-
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>
   );
 }

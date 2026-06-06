@@ -7,16 +7,15 @@ import LogoIcon from "@/components/Logo";
 import { GoogleIcon, VisibilityIcon } from "@/components/auth/icons";
 import { signInWithEmail, signInWithGoogle } from "@/lib/auth/client";
 import Spinner from "@/components/Spinner";
+import { toast } from "sonner";
 
 export default function SigninForm() {
   const router = useRouter();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setErrorMessage("");
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
@@ -27,7 +26,7 @@ export default function SigninForm() {
     setIsSubmitting(false);
 
     if (!result.ok) {
-      setErrorMessage(result.message);
+      toast.error(result.message);
       return;
     }
 
@@ -35,11 +34,10 @@ export default function SigninForm() {
   }
 
   async function handleGoogleSignIn() {
-    setErrorMessage("");
     const result = await signInWithGoogle("/");
 
     if (!result.ok) {
-      setErrorMessage(result.message);
+      toast.error(result.message);
     }
   }
 
@@ -131,12 +129,6 @@ export default function SigninForm() {
               )}
             </button>
           </form>
-
-          {errorMessage && (
-            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-              {errorMessage}
-            </p>
-          )}
 
           <button
             className="mt-3.5 flex h-10 w-full items-center justify-center gap-4 rounded-sm border border-slate-300 bg-white text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"

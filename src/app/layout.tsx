@@ -7,6 +7,7 @@ import {
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
+import { Toaster } from "sonner";
 
 const googleSans = Google_Sans({
   subsets: ["latin"],
@@ -87,6 +88,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
+          <Toaster position="bottom-right" richColors />
         </QueryProvider>
       </body>
     </html>

@@ -31,9 +31,9 @@ import {
 import { deleteAccount, signOut } from "@/lib/auth";
 import { resolveDisplayName } from "@/lib/profileDisplay";
 import { getLocalUserEmail, getLocalUserId } from "@/lib/userSession";
-import SuccessModal from "@/components/modals/SuccessModal";
 import DeleteAccountModal from "@/components/modals/DeleteAccountModal";
 import SignOutModal from "@/components/modals/SignOutModal";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -46,7 +46,6 @@ export default function SettingsPage() {
   const [formInitialized, setFormInitialized] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -82,7 +81,7 @@ export default function SettingsPage() {
       }
 
       invalidateProfile();
-      setShowSaveSuccess(true);
+      toast.success("Profile saved successfully");
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Could not save");
     } finally {
@@ -92,6 +91,7 @@ export default function SettingsPage() {
 
   async function handleDeleteAccount() {
     await deleteAccount();
+    toast.success("Account deleted");
     router.push("/signin");
   }
 
@@ -99,8 +99,10 @@ export default function SettingsPage() {
     setIsSigningOut(true);
     try {
       await signOut();
+      toast.success("Signed out successfully");
       router.push("/signin");
     } catch {
+      toast.error("Failed to sign out");
       setIsSigningOut(false);
     }
   }
@@ -343,13 +345,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-
-      <SuccessModal
-        open={showSaveSuccess}
-        onClose={() => setShowSaveSuccess(false)}
-        title="Profile saved"
-        description="Your name and avatar have been updated."
-      />
 
       <SignOutModal
         open={showSignOutModal}
