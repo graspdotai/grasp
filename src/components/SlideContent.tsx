@@ -83,6 +83,8 @@ interface DiagramPanelProps {
   isFullscreen?: boolean;
 }
 
+const wikiCache: Record<string, WikiSummary | "error"> = {};
+
 export function DiagramPanel({
   diagramQuery,
   variant = "dark",
@@ -94,17 +96,35 @@ export function DiagramPanel({
   const [error, setError] = useState(false);
 
   const fetchDiagram = useCallback(async () => {
+    const query = diagramQuery.trim();
+    if (!query) return;
+
+    if (wikiCache[query]) {
+      if (wikiCache[query] === "error") {
+        setError(true);
+        setWiki(null);
+      } else {
+        setError(false);
+        setWiki(wikiCache[query] as WikiSummary);
+      }
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(false);
     try {
-      const encoded = encodeURIComponent(diagramQuery.trim());
+      const encoded = encodeURIComponent(query);
       const res = await fetch(
         `https://en.wikipedia.org/api/rest_v1/page/summary/${encoded}`,
         { headers: { "Api-User-Agent": "GraspAI/1.0 (education platform)" } },
       );
       if (!res.ok) throw new Error("Not found");
-      setWiki((await res.json()) as WikiSummary);
+      const data = (await res.json()) as WikiSummary;
+      wikiCache[query] = data;
+      setWiki(data);
     } catch {
+      wikiCache[query] = "error";
       setError(true);
     } finally {
       setLoading(false);
