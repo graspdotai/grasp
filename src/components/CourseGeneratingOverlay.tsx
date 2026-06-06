@@ -61,7 +61,7 @@ export default function CourseGeneratingOverlay({
           />
 
           {/* Centralized text and spinner loader */}
-          <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-10">
+          <div className="relative z-10 flex flex-col items-center justify-center text-center px-6">
             <div className="flex items-center justify-center overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.h2
@@ -71,7 +71,7 @@ export default function CourseGeneratingOverlay({
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
                   transition={{ duration: 0.4, ease: "linear" }}
-                  className="font-sans text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-neutral-900"
+                  className="font-sans text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 py-6"
                 >
                   {PHASES[phaseIndex]}
                 </motion.h2>
@@ -80,10 +80,10 @@ export default function CourseGeneratingOverlay({
 
             <div className="flex items-center gap-2">
               <div>
-                <Spinner className="text-neutral-700" size={28} />
+                <Spinner className="text-neutral-700" size={16} />
               </div>
 
-              <p className="text-neutral-500 tracking-wide mt-12 text-sm sm:text-base">
+              <p className="text-neutral-500 text-sm sm:text-lg">
                 Working on your course on{" "}
                 <span className="text-neutral-900 font-semibold"> {topic}</span>
               </p>
