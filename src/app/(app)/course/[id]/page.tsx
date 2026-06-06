@@ -759,11 +759,12 @@ export default function CoursePage({
               </div>
               <div className="my-auto z-10 flex flex-col gap-4 p-8 relative">
                 {/* Hide the header for layouts that render their own title */}
-                {activeSlide.layout !== "title" && activeSlide.layout !== "statement" && (
-                  <h3 className="text-xl md:text-2xl font-serif text-white tracking-tight drop-shadow-md">
-                    {activeSlide.title}
-                  </h3>
-                )}
+                {activeSlide.layout !== "title" &&
+                  activeSlide.layout !== "statement" && (
+                    <h3 className="text-xl md:text-2xl font-serif text-white tracking-tight drop-shadow-md">
+                      {activeSlide.title}
+                    </h3>
+                  )}
 
                 <SlideContent
                   title={activeSlide.title}
@@ -1026,20 +1027,24 @@ export default function CoursePage({
                   ) : (
                     <>
                       {/* Classroom slide — layout-aware wrapper */}
-                      <div className={`w-full my-auto z-10 relative overflow-y-auto pb-24 ${
-                        activeSlide.layout === "visual" || activeSlide.layout === "title"
-                          ? "flex flex-col items-center justify-center h-full p-8 md:p-14"
-                          : "flex flex-col gap-6 max-w-2xl mx-auto p-8 md:p-12"
-                      }`}>
+                      <div
+                        className={`w-full my-auto z-10 relative overflow-y-auto pb-24 ${
+                          activeSlide.layout === "visual" ||
+                          activeSlide.layout === "title"
+                            ? "flex flex-col items-center justify-center h-full p-8 md:p-14"
+                            : "flex flex-col gap-6 max-w-5xl mx-auto p-8 md:p-12"
+                        }`}
+                      >
                         {/* Title shown inline only for non-self-titling layouts */}
-                        {activeSlide.layout !== "title" && activeSlide.layout !== "statement" && (
-                          <>
-                            <h2 className="text-3xl md:text-4xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
-                              {activeSlide.title}
-                            </h2>
-                            <div className="h-0.5 w-16 bg-white/40 mt-2" />
-                          </>
-                        )}
+                        {activeSlide.layout !== "title" &&
+                          activeSlide.layout !== "statement" && (
+                            <>
+                              <h2 className="text-3xl md:text-4xl font-serif text-white tracking-tight leading-tight drop-shadow-md">
+                                {activeSlide.title}
+                              </h2>
+                              <div className="h-0.5 w-16 bg-white/40 mt-2" />
+                            </>
+                          )}
 
                         <SlideContent
                           title={activeSlide.title}

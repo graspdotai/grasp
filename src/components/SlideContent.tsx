@@ -131,7 +131,7 @@ export function DiagramPanel({
   if (error || !wiki?.thumbnail) return null;
 
   const isDark = variant === "dark";
-  const maxH = large ? 420 : 260;
+  const maxH = large ? 500 : 260;
 
   return (
     <div
