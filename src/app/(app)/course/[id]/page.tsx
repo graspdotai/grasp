@@ -63,12 +63,15 @@ export default function CoursePage({
     activeSlideIdxRef.current = activeSlideIdx;
   }, [activeSlideIdx]);
 
-  const [isClassroomFullscreen, setIsClassroomFullscreen] = useState<boolean>(false);
+  const [isClassroomFullscreen, setIsClassroomFullscreen] =
+    useState<boolean>(false);
   const classroomSlideRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsClassroomFullscreen(document.fullscreenElement === classroomSlideRef.current);
+      setIsClassroomFullscreen(
+        document.fullscreenElement === classroomSlideRef.current,
+      );
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => {
@@ -795,7 +798,7 @@ export default function CoursePage({
                   >
                     <button
                       onClick={(e) => toggleSectionCompleted(section.id, e)}
-                      className={`mt-0.5 flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full border transition-all duration-200 ${
+                      className={`mt-0.5 shrink-0 flex items-center justify-center w-5 h-5 rounded-full border transition-all duration-200 ${
                         section.completed
                           ? "bg-success-500 border-success-600 text-white"
                           : "bg-white text-transparent group-hover:text-primary/30"
@@ -863,7 +866,7 @@ export default function CoursePage({
                       <CheckCircleIcon
                         size={16}
                         weight="fill"
-                        className="text-primary mt-0.5 flex-shrink-0"
+                        className="text-primary mt-0.5 shrink-0"
                       />
                       <span>{point}</span>
                     </li>
@@ -921,7 +924,7 @@ export default function CoursePage({
                   onClick={() => selectSection(prevSection.id)}
                   className="flex items-center gap-4 p-5 border border-neutral-200 hover:border-primary/30 hover:bg-neutral-50/50 rounded-2xl text-left group transition-all duration-200 cursor-pointer"
                 >
-                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all flex-shrink-0">
+                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all shrink-0">
                     <CaretLeftIcon size={18} weight="bold" />
                   </div>
                   <div className="min-w-0">
@@ -950,7 +953,7 @@ export default function CoursePage({
                       {nextSection.title}
                     </p>
                   </div>
-                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all flex-shrink-0">
+                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all shrink-0">
                     <CaretRightIcon size={18} weight="bold" />
                   </div>
                 </button>
@@ -967,7 +970,7 @@ export default function CoursePage({
                       {isLiveCourse ? "Back to Dashboard" : "JavaScript basics"}
                     </p>
                   </div>
-                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all flex-shrink-0">
+                  <div className="bg-neutral-100 rounded-xl h-10 w-10 flex items-center justify-center text-neutral-500 group-hover:bg-primary group-hover:text-white transition-all shrink-0">
                     <CaretRightIcon size={18} weight="bold" />
                   </div>
                 </Link>
@@ -1137,7 +1140,11 @@ export default function CoursePage({
                   <button
                     onClick={toggleClassroomFullscreen}
                     className="absolute top-4 right-4 z-30 p-2.5 bg-black/40 hover:bg-black/60 border border-white/10 rounded-full text-white/80 hover:text-white backdrop-blur-md transition-all cursor-pointer hover:scale-105 active:scale-95"
-                    title={isClassroomFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen"}
+                    title={
+                      isClassroomFullscreen
+                        ? "Exit Fullscreen (Esc)"
+                        : "Fullscreen"
+                    }
                   >
                     {isClassroomFullscreen ? (
                       <CornersInIcon size={16} weight="bold" />
@@ -1199,7 +1206,9 @@ export default function CoursePage({
                             <>
                               <h2
                                 className={`font-serif text-white tracking-tight leading-tight drop-shadow-md ${
-                                  isClassroomFullscreen ? "text-4xl md:text-5xl" : "text-3xl md:text-4xl"
+                                  isClassroomFullscreen
+                                    ? "text-4xl md:text-5xl"
+                                    : "text-3xl md:text-4xl"
                                 }`}
                               >
                                 {activeSlide.title}
