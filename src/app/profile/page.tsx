@@ -5,12 +5,54 @@ import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
 import { resolveDisplayName } from "@/lib/profileDisplay";
 import { resolveAvatarVariant } from "@/lib/avatar";
-import { ArrowLeftIcon } from "@phosphor-icons/react";
+import {
+  ArrowLeftIcon,
+  BookOpenIcon,
+  GraduationCapIcon,
+  LightbulbIcon,
+  BrainIcon,
+  NotebookIcon,
+  BookmarkIcon,
+  StarIcon,
+  PencilSimpleIcon,
+  MagnifyingGlassIcon,
+  FlaskIcon,
+  ClockIcon,
+  TrophyIcon,
+  TranslateIcon,
+  PaletteIcon,
+} from "@phosphor-icons/react";
 import Navbar from "@/components/Navbar";
 import { loadOnboardingProfile } from "@/lib/onboardingStorage";
 import { getLocalUserEmail, getLocalUserId } from "@/lib/userSession";
 import { useProfile } from "@/hooks/useProfile";
 import type { OnboardingProfile } from "@/lib/onboarding";
+
+function ProfileRow({
+  icon,
+  label,
+  value,
+  capitalize,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  capitalize?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-4 px-4 py-3.5">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500">
+        {icon}
+      </div>
+      <div>
+        <p className="text-xs text-neutral-400">{label}</p>
+        <p className={`text-sm font-medium text-neutral-800 mt-0.5 ${capitalize ? "capitalize" : ""}`}>
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const userId = getLocalUserId();
@@ -40,19 +82,47 @@ export default function ProfilePage() {
           Back to Courses
         </Link>
 
-        <div className="bg-white rounded-3xl border border-neutral-100 p-6 sm:p-8">
-          <div className="flex items-center gap-4">
-            <UserAvatar profile={profile} email={email} size={56} />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
-              <p className="text-sm text-neutral-500 mt-0.5">{email}</p>
-              {userId && (
-                <p className="text-[10px] text-neutral-400 mt-2 font-mono truncate max-w-xs">
-                  {userId}
-                </p>
-              )}
+        <div className="bg-white rounded-3xl border border-neutral-100 overflow-hidden">
+          {/* Header with decorative ghost icons */}
+          <div className="relative px-6 pt-6 pb-5 sm:px-8 sm:pt-8 sm:pb-6 overflow-hidden">
+            {/* Far top-left corner — peeking in for balance */}
+            <BookOpenIcon       size={64} weight="light" className="pointer-events-none select-none absolute -top-3 -left-4 rotate-[-16deg] text-neutral-400 opacity-[0.15]" />
+
+            {/* Right cluster — two columns, spread vertically */}
+            {/* Far-right column */}
+            <GraduationCapIcon  size={72} weight="light" className="pointer-events-none select-none absolute -top-2 right-3  rotate-12      text-neutral-400 opacity-[0.20]" />
+            <LightbulbIcon      size={64} weight="light" className="pointer-events-none select-none absolute -bottom-2 right-2 rotate-[-8deg] text-neutral-400 opacity-[0.18]" />
+
+            {/* Mid-right column */}
+            <BrainIcon          size={56} weight="light" className="pointer-events-none select-none absolute top-0 right-24 -rotate-12     text-neutral-400 opacity-[0.17]" />
+            <NotebookIcon       size={52} weight="light" className="pointer-events-none select-none absolute bottom-0 right-20 rotate-16    text-neutral-400 opacity-[0.16]" />
+
+            {/* Bridge between columns */}
+            <BookmarkIcon       size={44} weight="light" className="pointer-events-none select-none absolute top-1/2 -translate-y-1/2 right-12 rotate-22 text-neutral-400 opacity-[0.14]" />
+
+            {/* Extra fill — spread across the right half */}
+            <StarIcon           size={38} weight="light" className="pointer-events-none select-none absolute top-2 right-36 rotate-[18deg] text-neutral-400 opacity-[0.14]" />
+            <TrophyIcon         size={48} weight="light" className="pointer-events-none select-none absolute bottom-1 right-36 rotate-[-14deg] text-neutral-400 opacity-[0.15]" />
+            <MagnifyingGlassIcon size={42} weight="light" className="pointer-events-none select-none absolute top-0 right-48 rotate-[10deg] text-neutral-400 opacity-[0.13]" />
+            <FlaskIcon          size={40} weight="light" className="pointer-events-none select-none absolute bottom-0 right-52 rotate-[-18deg] text-neutral-400 opacity-[0.13]" />
+            <PencilSimpleIcon   size={44} weight="light" className="pointer-events-none select-none absolute top-1/2 -translate-y-1/2 right-44 rotate-[24deg] text-neutral-400 opacity-[0.12]" />
+            <ClockIcon          size={40} weight="light" className="pointer-events-none select-none absolute top-3 right-60 rotate-[-8deg] text-neutral-400 opacity-[0.12]" />
+
+            <div className="relative flex items-center gap-4">
+              <UserAvatar profile={profile} email={email} size={56} />
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
+                <p className="text-sm text-neutral-500 mt-0.5">{email}</p>
+                {userId && (
+                  <p className="text-[10px] text-neutral-400 mt-2 font-mono truncate max-w-xs">
+                    {userId}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
+
+          <div className="px-6 pb-6 sm:px-8 sm:pb-8">
 
           {!userId && (
             <p className="mt-6 text-sm text-amber-700 bg-amber-50 rounded-xl px-4 py-3">
@@ -65,58 +135,19 @@ export default function ProfilePage() {
           )}
 
           {!isLoading && profile && (
-            <div className="mt-8 space-y-6">
-              <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                  Avatar
-                </h2>
-                <p className="text-sm text-neutral-700">
-                  {resolveAvatarVariant(profile)}
-                </p>
-              </div>
-
+            <div className="mt-6 flex flex-col gap-1">
+              <ProfileRow icon={<PaletteIcon size={20} weight="regular" />} label="Avatar style" value={resolveAvatarVariant(profile)} />
               {profile.learner_types?.length > 0 && (
-                <div>
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                    Learner type
-                  </h2>
-                  <p className="text-sm text-neutral-700">
-                    {profile.learner_types.join(", ")}
-                  </p>
-                </div>
+                <ProfileRow icon={<BrainIcon size={20} weight="regular" />} label="Learner type" value={profile.learner_types.join(", ")} />
               )}
-
               {profile.learning_interests?.length > 0 && (
-                <div>
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                    Interests
-                  </h2>
-                  <p className="text-sm text-neutral-700">
-                    {profile.learning_interests.join(", ")}
-                  </p>
-                </div>
+                <ProfileRow icon={<StarIcon size={20} weight="regular" />} label="Interests" value={profile.learning_interests.join(", ")} />
               )}
-
               {profile.lesson_language && (
-                <div>
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                    Lesson language
-                  </h2>
-                  <p className="text-sm text-neutral-700 capitalize">
-                    {profile.lesson_language}
-                  </p>
-                </div>
+                <ProfileRow icon={<TranslateIcon size={20} weight="regular" />} label="Lesson language" value={profile.lesson_language} capitalize />
               )}
-
               {profile.lesson_length && (
-                <div>
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-2">
-                    Preferred lesson length
-                  </h2>
-                  <p className="text-sm text-neutral-700 capitalize">
-                    {profile.lesson_length}
-                  </p>
-                </div>
+                <ProfileRow icon={<ClockIcon size={20} weight="regular" />} label="Preferred lesson length" value={profile.lesson_length} capitalize />
               )}
             </div>
           )}
@@ -126,24 +157,12 @@ export default function ProfilePage() {
               <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
                 Local onboarding (this device)
               </h2>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div>
-                  <dt className="text-neutral-500">Language</dt>
-                  <dd className="font-medium capitalize">{onboarding.language}</dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500">Lesson length</dt>
-                  <dd className="font-medium capitalize">{onboarding.lessonLength}</dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500">Learner types</dt>
-                  <dd className="font-medium">{onboarding.personas.join(", ")}</dd>
-                </div>
-                <div>
-                  <dt className="text-neutral-500">Interests</dt>
-                  <dd className="font-medium">{onboarding.interests.join(", ")}</dd>
-                </div>
-              </dl>
+              <div className="flex flex-col gap-1">
+                <ProfileRow icon={<TranslateIcon size={20} weight="regular" />} label="Language" value={onboarding.language} capitalize />
+                <ProfileRow icon={<ClockIcon size={20} weight="regular" />} label="Lesson length" value={onboarding.lessonLength} capitalize />
+                <ProfileRow icon={<BrainIcon size={20} weight="regular" />} label="Learner types" value={onboarding.personas.join(", ")} />
+                <ProfileRow icon={<StarIcon size={20} weight="regular" />} label="Interests" value={onboarding.interests.join(", ")} />
+              </div>
             </div>
           )}
 
@@ -154,6 +173,7 @@ export default function ProfilePage() {
             >
               Edit settings
             </Link>
+          </div>
           </div>
         </div>
       </div>

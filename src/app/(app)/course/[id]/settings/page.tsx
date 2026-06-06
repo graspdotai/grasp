@@ -85,7 +85,7 @@ export default function CourseSettingsPage({
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-8 flex flex-col gap-4 max-w-3xl">
           <section className="bg-white rounded-3xl border border-neutral-100 p-6">
             <h2 className="text-sm font-semibold text-neutral-800 mb-2">About this course</h2>
             <div className="max-w-xl">

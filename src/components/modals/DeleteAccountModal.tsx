@@ -46,6 +46,7 @@ export default function DeleteAccountModal({
   }
 
   function handleClose() {
+    if (isDeleting) return;
     onClose();
     setTimeout(() => {
       setStep("confirm");
@@ -192,7 +193,7 @@ export default function DeleteAccountModal({
               animate="center"
               exit="exit"
               transition={stepTransition}
-              className="flex flex-col items-center gap-4 pb-2 text-center"
+              className="flex flex-col items-center gap-4 py-6 text-center"
             >
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-50">
                 <CheckCircleIcon size={32} weight="fill" className="text-success-500" />
