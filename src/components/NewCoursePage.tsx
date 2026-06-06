@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
+  ArrowUpRightIcon,
   BookOpenIcon,
-  CheckCircleIcon,
   SparkleIcon,
-  WaveformIcon,
+  UserCircleIcon,
 } from "@phosphor-icons/react";
 import CourseGeneratingOverlay from "@/components/CourseGeneratingOverlay";
 import Navbar from "@/components/Navbar";
@@ -22,6 +24,31 @@ const LEVELS = [
   { value: "advanced", label: "Advanced" },
 ] as const;
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.05,
+    },
+  },
+} as const;
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, filter: "blur(4px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      type: "spring" as const,
+      stiffness: 90,
+      damping: 14,
+    },
+  },
+} as const;
+
 export default function NewCoursePage() {
   const router = useRouter();
   const [topic, setTopic] = useState("");
@@ -30,9 +57,15 @@ export default function NewCoursePage() {
     useState<(typeof LEVELS)[number]["value"]>("beginner");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [onboarding, setOnboarding] = useState(loadOnboardingProfile());
 
+  // Input focus states for sleek underline animation
+  const [isTopicFocused, setIsTopicFocused] = useState(false);
+  const [isGoalFocused, setIsGoalFocused] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     setOnboarding(loadOnboardingProfile());
   }, []);
 
@@ -63,229 +96,201 @@ export default function NewCoursePage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50">
-      <div className="max-w-7xl mx-auto px-5 py-5 sm:px-8 sm:py-6">
+    <main className="min-h-screen bg-white text-neutral-900 pb-24">
+      {/* Background radial glow */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] pointer-events-none overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="absolute -top-[200px] left-[10%] w-[350px] h-[350px] rounded-full bg-primary-100/30 blur-[100px]" />
+        <div className="absolute top-[50px] right-[15%] w-[400px] h-[400px] rounded-full bg-purple-100/20 blur-[120px]" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-5 py-5 sm:px-8 sm:py-6 relative z-10">
         <Navbar />
 
-        <div className="mt-6 mb-8">
+        <div className="mt-8 mb-12">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
           >
             <ArrowLeftIcon size={14} weight="bold" />
             <span>Back to Courses</span>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-          {/* Left — form */}
-          <div className="lg:col-span-5 xl:col-span-5">
-            <div className="bg-white rounded-3xl border border-neutral-100 p-6 sm:p-8">
-              <div className="flex items-center gap-2 text-xs font-semibold text-primary mb-2 uppercase tracking-wider">
-                <SparkleIcon size={14} weight="fill" />
-                <span>New course</span>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="max-w-2xl mx-auto flex flex-col gap-12"
+        >
+          {/* Header Section */}
+          <motion.div variants={itemVariants} className="space-y-5">
+            <p className="text-neutral-500 text-lg leading-relaxed max-w-xl">
+              Describe your topic and learning goal below. Grasp will construct
+              a complete, custom curriculum optimized for speech-tutor learning.
+            </p>
+          </motion.div>
+
+          {mounted && (
+            <motion.div
+              variants={itemVariants}
+              className="border-t border-b border-neutral-100 py-4 flex flex-wrap items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm">
+                <UserCircleIcon size={36} className="text-primary" />
+                <div>
+                  <p className="text-sm text-neutral-500">You</p>
+                  {onboarding ? (
+                    <span className="font-medium text-neutral-800">
+                      {[
+                        onboarding.personas?.[0],
+                        onboarding.interests?.[0],
+                        onboarding.language,
+                        onboarding.lessonLength,
+                      ]
+                        .filter(Boolean)
+                        .join(" • ")}
+                    </span>
+                  ) : (
+                    <span className="text-neutral-400 italic">
+                      No onboarding profile
+                    </span>
+                  )}
+                </div>
               </div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900">
-                What do you want to learn?
-              </h1>
-              <p className="text-neutral-500 text-sm mt-2 leading-relaxed">
-                Tell us your topic and goal. Grasp builds a full voice-ready course in
-                about a minute.
-              </p>
+              <Link
+                href="/onboarding"
+                className="text-xs bg-primary py-2 px-3 rounded-full text-white font-medium flex items-center space-x-2 hover:bg-primary-700 transition-colors"
+              >
+                <span>
+                  {onboarding ? "Customize Profile" : "Setup Profile"}{" "}
+                </span>
+                <ArrowRightIcon size={12} weight="bold" />
+              </Link>
+            </motion.div>
+          )}
 
-              <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-neutral-700">Topic</span>
-                  <input
-                    type="text"
-                    required
-                    minLength={3}
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="e.g. Introduction to Cardiac Arrest"
-                    className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+          {/* Form Section */}
+          <motion.div variants={itemVariants}>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-10">
+              {/* Topic Input */}
+              <div className="group relative flex flex-col gap-2">
+                <label
+                  htmlFor="topic-input"
+                  className="text-xs font-medium text-neutral-400 transition-colors duration-250 group-focus-within:text-primary"
+                >
+                  Topic
                 </label>
+                <input
+                  id="topic-input"
+                  type="text"
+                  required
+                  minLength={3}
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  onFocus={() => setIsTopicFocused(true)}
+                  onBlur={() => setIsTopicFocused(false)}
+                  placeholder="e.g. Cell structure"
+                  className="w-full bg-transparent py-3 text-lg sm:text-xl text-neutral-900 placeholder-neutral-300 focus:outline-none font-serif transition-all duration-200"
+                />
+                {/* Visual Underline */}
+                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-neutral-200" />
+                <motion.div
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
+                  animate={{ scaleX: isTopicFocused ? 1 : 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  style={{ originX: 0 }}
+                />
+              </div>
 
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-neutral-700">Your goal</span>
-                  <textarea
-                    required
-                    minLength={3}
-                    rows={4}
-                    value={goal}
-                    onChange={(e) => setGoal(e.target.value)}
-                    placeholder="What should you be able to do after this course?"
-                    className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+              {/* Goal Input */}
+              <div className="group relative flex flex-col gap-2">
+                <label
+                  htmlFor="goal-input"
+                  className="text-xs font-medium text-neutral-400 transition-colors duration-250 group-focus-within:text-primary"
+                >
+                  Your goal
                 </label>
+                <textarea
+                  id="goal-input"
+                  required
+                  minLength={3}
+                  rows={2}
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  onFocus={() => setIsGoalFocused(true)}
+                  onBlur={() => setIsGoalFocused(false)}
+                  placeholder="What should you be able to do or understand after this course?"
+                  className="w-full bg-transparent py-3 text-base text-neutral-900 placeholder-neutral-300 focus:outline-none resize-none leading-relaxed transition-all duration-200"
+                />
+                {/* Visual Underline */}
+                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-neutral-200" />
+                <motion.div
+                  className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
+                  animate={{ scaleX: isGoalFocused ? 1 : 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  style={{ originX: 0 }}
+                />
+              </div>
 
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-neutral-700">Level</span>
-                  <select
-                    value={learnerLevel}
-                    onChange={(e) =>
-                      setLearnerLevel(e.target.value as (typeof LEVELS)[number]["value"])
-                    }
-                    className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
-                  >
-                    {LEVELS.map((level) => (
-                      <option key={level.value} value={level.value}>
-                        {level.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <div className="flex flex-col gap-3">
+                <span className="text-xs font-medium text-neutral-400">
+                  Learner Level
+                </span>
+                <div className="flex flex-wrap gap-2 p-1.5 bg-neutral-50 border border-neutral-100 rounded-2xl w-fit max-w-full relative z-0 rounded-full">
+                  {LEVELS.map((level) => {
+                    const isSelected = learnerLevel === level.value;
+                    return (
+                      <button
+                        key={level.value}
+                        type="button"
+                        onClick={() => setLearnerLevel(level.value)}
+                        className={`relative px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 focus:outline-none select-none ${
+                          isSelected
+                            ? "text-white"
+                            : "text-neutral-500 hover:text-neutral-800"
+                        }`}
+                      >
+                        {isSelected && (
+                          <motion.div
+                            layoutId="activeLevelBackground"
+                            className="absolute inset-0 bg-primary rounded-full z-0"
+                            transition={{
+                              type: "spring",
+                              stiffness: 300,
+                              damping: 26,
+                            }}
+                          />
+                        )}
+                        <span className="relative z-10">{level.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-                {error && (
-                  <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">
-                    {error}
-                  </p>
-                )}
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 leading-relaxed">
+                  {error}
+                </p>
+              )}
 
+              {/* Submit Button */}
+              <div className="pt-4 ml-auto">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-white hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  className="group relative overflow-hidden w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-4 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-300 shadow-md shadow-neutral-900/5 hover:shadow-xl hover:shadow-neutral-900/10 active:scale-[0.98]"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <svg
-                        className="animate-spin h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Building your course…
-                    </>
-                  ) : (
-                    "Generate course"
-                  )}
+                  <span>Create Course</span>
+                  <ArrowUpRightIcon size={20} weight="regular" />
                 </button>
-              </form>
-            </div>
-          </div>
-
-          {/* Right — full-height companion panel */}
-          <div className="lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
-            <div className="relative overflow-hidden rounded-3xl bg-primary-600 p-8 sm:p-10 min-h-[220px] flex flex-col justify-between">
-              <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full border-[40px] border-white/[0.07]" />
-              <div className="absolute -bottom-20 left-10 w-72 h-72 rounded-full border-[50px] border-white/[0.05]" />
-
-              <div className="relative z-10">
-                <p className="text-[11px] font-medium tracking-widest text-white/45 uppercase">
-                  Your learning path
-                </p>
-                <p className="font-serif text-[26px] sm:text-[32px] text-white leading-tight mt-2">
-                  From question to voice classroom
-                </p>
               </div>
-
-              <p className="relative z-10 text-sm text-white/70 mt-4 max-w-md leading-relaxed">
-                Voice lessons, slides, and an AI tutor — built for how you learn.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white rounded-3xl border border-neutral-100 p-6">
-                <div className="flex items-center gap-2 text-sm font-semibold text-neutral-800 mb-3">
-                  <BookOpenIcon size={18} className="text-primary" />
-                  Onboarding profile
-                </div>
-                {onboarding ? (
-                  <div className="flex flex-col gap-3 text-sm text-neutral-600">
-                    {onboarding.personas.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1">
-                          You
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {onboarding.personas.map((p) => (
-                            <span
-                              key={p}
-                              className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-xs font-medium"
-                            >
-                              {p}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {onboarding.interests.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-1">
-                          Interests
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {onboarding.interests.map((i) => (
-                            <span
-                              key={i}
-                              className="rounded-full bg-neutral-100 text-neutral-700 px-2.5 py-0.5 text-xs font-medium"
-                            >
-                              {i}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <p>
-                      <span className="text-neutral-400">Language:</span> {onboarding.language}
-                    </p>
-                    <p>
-                      <span className="text-neutral-400">Pace:</span> {onboarding.lessonLength}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-neutral-500">
-                    No onboarding yet.{" "}
-                    <Link href="/onboarding" className="text-primary font-medium hover:underline">
-                      Complete onboarding
-                    </Link>{" "}
-                    so your course matches your goals.
-                  </p>
-                )}
-              </div>
-
-              <div className="bg-white rounded-3xl border border-neutral-100 p-6">
-                <div className="flex items-center gap-2 text-sm font-semibold text-neutral-800 mb-3">
-                  <WaveformIcon size={18} className="text-primary" />
-                  What you get
-                </div>
-                <ul className="flex flex-col gap-2.5 text-sm text-neutral-600">
-                  {[
-                    "Grounded sources saved to your course",
-                    "Modules with slides and key points",
-                    "Voice-ready scripts for Aethex TTS",
-                    "Interactive tutor on every slide",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <CheckCircleIcon
-                        size={16}
-                        weight="fill"
-                        className="text-primary shrink-0 mt-0.5"
-                      />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-          </div>
-        </div>
+            </form>
+          </motion.div>
+        </motion.div>
       </div>
     </main>
   );

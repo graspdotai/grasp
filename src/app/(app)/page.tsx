@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import { PlusIcon } from "@phosphor-icons/react";
+import { PlusIcon, GraduationCapIcon, ArrowLeft } from "@phosphor-icons/react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import CourseCard from "@/components/CourseCard";
 import { useUserCourses } from "@/hooks/useCourses";
