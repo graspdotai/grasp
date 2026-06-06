@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-neutral-50">
-      <div className="max-w-3xl mx-auto px-5 py-5 sm:px-8 sm:py-6">
+      <div className="p-6 max-w-7xl mx-auto">
         <Navbar />
 
         <Link
