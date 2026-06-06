@@ -85,11 +85,12 @@ Voice rules (critical):
 Use plain language for ${input.learnerLevel} learners.
 When a lesson language is specified, write learner-facing text in that language; keep JSON keys in English.
 
-Math notation rules:
-- When a slide covers mathematical or scientific content with formulas/equations, write them using LaTeX syntax.
-- Use $...$ for inline math (e.g. $E = mc^2$) and $$...$$ for block/display math (e.g. $$\\int_0^\\infty e^{-x}\\,dx = 1$$).
-- Math notation is allowed in both points and explanationText.
-- Only use math notation when it genuinely aids understanding — do not force it on non-mathematical content.
+Math notation rules (CRITICAL):
+- When the topic involves mathematical, scientific, engineering, economic, or technical concepts, you MUST use LaTeX syntax for formulas, equations, variables, and math expressions.
+- This includes single variables or parameters (e.g., use $x$, $y$, $t$, or $f(x)$ instead of plain text x, y, t, or f(x)).
+- Use $...$ for inline math (e.g. $E = mc^2$, $a^2 + b^2 = c^2$) and $$...$$ for block/display math (e.g. $$\\int_0^\\infty e^{-x}\\,dx = 1$$).
+- Always use LaTeX math formatting for any numerical expressions, functions, symbols, or equations.
+- Math notation is allowed and encouraged in both the points array and the explanationText.
 
 Diagram rules (CRITICAL — diagrams dramatically improve learning, do not skip them):
 - ANY slide covering biology, anatomy, chemistry, physics, astronomy, ecology, geology, medicine, or earth science MUST have a diagramQuery.
@@ -101,7 +102,7 @@ Diagram rules (CRITICAL — diagrams dramatically improve learning, do not skip 
 Slide layout rules (CRITICAL — vary layouts for engagement, never use only "bullets"):
 Available layouts and when to use them:
 - "title": Use for the FIRST slide of every module and any major section-opening concept. Has a large centered title and a brief subtitle. Points array should have exactly 1 item (the subtitle/hook sentence).
-- "visual": Use when the slide has a diagramQuery AND the diagram is the primary teaching tool (e.g., "This is a cell", "The water cycle", "The periodic table"). Points serve as labeled callouts (2–3 short labels only). The diagram takes center stage.
+- "visual": ONLY use when the slide has a valid, non-null, non-empty diagramQuery AND the diagram is the primary teaching tool (e.g., "This is a cell", "The water cycle", "The periodic table"). Never use the "visual" layout if diagramQuery is null. Points serve as labeled callouts (2–3 short labels only). The diagram takes center stage.
 - "two-col": Use for compare/contrast, cause/effect, or process slides. Points split into two columns — use exactly 4 to 6 points so they split evenly.
 - "statement": Use for a single powerful concept, a surprising fact, a key definition, or a memorable takeaway. Points array has exactly 1 item — a bold, punchy sentence.
 - "bullets": Default. Use for explanation slides with 3–5 normal bullet points.
@@ -139,11 +140,13 @@ Content rules:
 - 4 to 6 slides per module — this module covers ONE specific concept, keep it focused and deep, not broad
 - 3 to 5 keyPoints summarizing the module
 - 3 to 5 points per slide (concrete, not generic), except: title=1, statement=1, visual=2-3, two-col=4-6
-- Each explanationText: 200–320 words of continuous spoken teaching for that beat
+- Each explanationText: about 100 words of continuous spoken teaching for that beat (must be strictly under 600 characters to prevent TTS payload limits from failing)
 - Open with a hook, teach the idea, give an example, close with a takeaway
 - Do NOT include duration — we calculate it from word count
 - Science/biology/anatomy/physics slides MUST set diagramQuery to a real Wikipedia article title
-- Vary layouts — aim for a mix of title + visual + two-col + statement + bullets across the module`;
+- Vary layouts — aim for a mix of title + visual + two-col + statement + bullets across the module
+- A slide using the "visual" layout MUST have a valid, non-null, non-empty diagramQuery. If diagramQuery is null, you CANNOT use the "visual" layout.
+- If the topic involves math, science, physics, economics, chemistry, engineering, computer science, or finance, you MUST write equations, formulas, variables, and numbers using LaTeX notation ($...$ or $$...$$) in both points and explanationText.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -284,29 +287,21 @@ export async function generateLessonPack(input: {
     : "";
 
   const systemPrompt = `You are a curriculum designer and researcher for Grasp.
-Your job is to design a high-quality, exhaustive lesson pack for a user's target topic and goals.
+Your job is to design a high-quality lesson pack for a user's target topic and goals.
 Additionally, act as a web search research engine and provide 2-5 high-quality, real-world educational resources (from trusted domains like wikipedia.org, khanacademy.org, nasa.gov, britannica.com, or university sites) relevant to the topic.
 For each source, provide a real or highly accurate URL, a descriptive title, and 2-4 actual content highlights/snippets discussing the topic.
-
-Module design philosophy (CRITICAL):
-- Design 8 to 12 modules. More is better — err on the side of too many rather than too few.
-- Each module must cover ONE specific, tightly-scoped concept, process, structure, or skill. Do NOT bundle multiple ideas into one module.
-- Bad example: "Introduction to Cells" (too broad). Good example: "The Cell Membrane: Structure and Function", "Mitochondria and Energy Production", "The Nucleus and DNA Storage".
-- Think of modules like chapters in a textbook split at the finest useful granularity — each should take 5-10 minutes to learn.
-- Sequence modules logically: foundational concepts first, complex applications and synthesis last.
-- Avoid vague titles like "Overview", "Summary", "Advanced Topics". Every module title should tell the learner exactly what they will learn.
 
 Return JSON in this exact structure:
 {
   "summary": "Max 2 short sentences (~200 chars). Why this topic matters.",
-  "learningObjectives": ["objective 1", "objective 2", "objective 3"],
+  "learningObjectives": ["objective 1", "objective 2"],
   "lessonOutline": [
     {
-      "title": "Specific, single-concept module title",
-      "description": "Max 2 short sentences (~150 chars) on exactly what is covered."
+      "title": "Module Title",
+      "description": "Max 2 short sentences (~150 chars)."
     }
   ],
-  "quizQuestions": ["question 1", "question 2", "question 3"],
+  "quizQuestions": ["question 1", "question 2"],
   "sources": [
     {
       "title": "Title of the web resource",
@@ -320,7 +315,7 @@ Return JSON in this exact structure:
 Goal: ${input.goal}
 Learner level: ${input.learnerLevel}
 ${onboardingBlock}
-Design a thorough, exhaustive lesson pack. Use 8-12 granular, single-concept modules. Each module title must be specific and descriptive — a learner should know exactly what they will study from the title alone.`;
+Please design a tailored lesson pack and research sources matching this profile.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -335,7 +330,7 @@ Design a thorough, exhaustive lesson pack. Use 8-12 granular, single-concept mod
         { role: "user", content: userPrompt },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 6144,
+      max_tokens: 4096,
       temperature: 0.4,
     }),
   });
