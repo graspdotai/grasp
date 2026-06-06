@@ -10,6 +10,7 @@ import { useCourse } from "@/hooks/useCourse";
 import { deleteCourse, isUuid } from "@/lib/courseApi";
 import { queryKeys } from "@/lib/queryKeys";
 import { getLocalUserId } from "@/lib/userSession";
+import DeleteCourseModal from "@/components/modals/DeleteCourseModal";
 
 export default function CourseSettingsPage({
   params,
@@ -21,45 +22,24 @@ export default function CourseSettingsPage({
   const { id: courseId } = use(params);
   const isLiveCourse = isUuid(courseId);
   const { data, isLoading, error } = useCourse(courseId);
-
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const courseTitle = data?.course.title ?? "Course";
 
   async function handleDeleteCourse() {
-    if (!isLiveCourse) return;
-    if (deleteConfirm !== "DELETE") {
-      setDeleteError('Type DELETE to confirm.');
-      return;
+    const userId = getLocalUserId();
+    await deleteCourse(courseId, userId ?? undefined);
+    void queryClient.removeQueries({ queryKey: queryKeys.course(courseId) });
+    if (userId) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.courses(userId) });
     }
-
-    if (!window.confirm(`Permanently delete "${courseTitle}"? This cannot be undone.`)) {
-      return;
-    }
-
-    setIsDeleting(true);
-    setDeleteError(null);
-
-    try {
-      const userId = getLocalUserId();
-      await deleteCourse(courseId, userId ?? undefined);
-      void queryClient.removeQueries({ queryKey: queryKeys.course(courseId) });
-      if (userId) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.courses(userId) });
-      }
-      router.push("/");
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Could not delete course");
-      setIsDeleting(false);
-    }
+    router.push("/");
   }
 
   if (!isLiveCourse) {
     return (
       <main className="min-h-screen bg-neutral-50">
-        <div className="max-w-3xl mx-auto px-5 py-5 sm:px-8 sm:py-6">
+        <div className="p-6 max-w-7xl mx-auto">
           <Navbar />
           <p className="mt-8 text-sm text-neutral-600">Settings are only available for saved courses.</p>
           <Link
@@ -75,8 +55,8 @@ export default function CourseSettingsPage({
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50">
-      <div className="max-w-3xl mx-auto px-5 py-5 sm:px-8 sm:py-6">
+    <main className="min-h-screen">
+      <div className="p-6 max-w-7xl mx-auto">
         <Navbar />
 
         <Link
@@ -108,49 +88,44 @@ export default function CourseSettingsPage({
         <div className="mt-8 flex flex-col gap-4">
           <section className="bg-white rounded-3xl border border-neutral-100 p-6">
             <h2 className="text-sm font-semibold text-neutral-800 mb-2">About this course</h2>
-            {data?.course.summary && (
-              <p className="text-sm text-neutral-600 leading-relaxed">{data.course.summary}</p>
-            )}
-            {data?.course.goal && (
-              <p className="text-sm text-neutral-500 mt-2">
-                <span className="font-medium text-neutral-700">Goal:</span> {data.course.goal}
-              </p>
-            )}
-            {!isLoading && !data && (
-              <p className="text-sm text-neutral-500">Course details unavailable.</p>
-            )}
+            <div className="max-w-xl">
+              {data?.course.summary && (
+                <p className="text-sm text-neutral-600 leading-relaxed">{data.course.summary}</p>
+              )}
+              {data?.course.goal && (
+                <p className="text-sm text-neutral-500 mt-2">
+                  <span className="font-medium text-neutral-700">Goal:</span> {data.course.goal}
+                </p>
+              )}
+              {!isLoading && !data && (
+                <p className="text-sm text-neutral-500">Course details unavailable.</p>
+              )}
+            </div>
           </section>
 
-          <section className="bg-white rounded-3xl border border-red-100 p-6">
-            <h2 className="text-sm font-semibold text-red-700 mb-2">Delete course</h2>
-            <p className="text-sm text-neutral-600 mb-4">
+          <section className="bg-white rounded-3xl border border-danger-100 p-6">
+            <h2 className="text-sm font-semibold text-danger-700 mb-2">Delete course</h2>
+            <p className="text-sm text-neutral-500 mb-4">
               Removes this course, all modules, and progress. This cannot be undone.
             </p>
-            <label htmlFor="deleteCourseConfirm" className="text-xs font-medium text-neutral-600">
-              Type <span className="font-mono font-semibold">DELETE</span> to confirm
-            </label>
-            <input
-              id="deleteCourseConfirm"
-              type="text"
-              value={deleteConfirm}
-              onChange={(e) => setDeleteConfirm(e.target.value)}
-              className="mt-1.5 h-10 w-full max-w-xs rounded-xl border border-neutral-200 px-3 text-sm font-mono"
-              autoComplete="off"
-            />
-            {deleteError && (
-              <p className="text-sm text-red-600 mt-2">{deleteError}</p>
-            )}
             <button
               type="button"
-              onClick={handleDeleteCourse}
-              disabled={isDeleting || deleteConfirm !== "DELETE" || isLoading}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              onClick={() => setShowDeleteModal(true)}
+              disabled={isLoading}
+              className="rounded-xl bg-danger-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-danger-700 disabled:opacity-50"
             >
-              {isDeleting ? "Deleting course…" : "Delete course"}
+              Delete course
             </button>
           </section>
         </div>
       </div>
+
+      <DeleteCourseModal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onDelete={handleDeleteCourse}
+        courseTitle={courseTitle}
+      />
     </main>
   );
 }

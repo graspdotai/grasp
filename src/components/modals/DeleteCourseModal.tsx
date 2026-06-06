@@ -7,10 +7,11 @@ import Modal from "@/components/modals/Modal";
 
 type Step = "confirm" | "type" | "done";
 
-interface DeleteAccountModalProps {
+interface DeleteCourseModalProps {
   open: boolean;
   onClose: () => void;
   onDelete: () => Promise<void>;
+  courseTitle: string;
 }
 
 const stepVariants = {
@@ -21,11 +22,12 @@ const stepVariants = {
 
 const stepTransition = { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const };
 
-export default function DeleteAccountModal({
+export default function DeleteCourseModal({
   open,
   onClose,
   onDelete,
-}: DeleteAccountModalProps) {
+  courseTitle,
+}: DeleteCourseModalProps) {
   const [step, setStep] = useState<Step>("confirm");
   const [dir, setDir] = useState(1);
   const [input, setInput] = useState("");
@@ -66,7 +68,7 @@ export default function DeleteAccountModal({
       await onDelete();
       advance("done");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete account.");
+      setError(err instanceof Error ? err.message : "Could not delete course.");
     } finally {
       setIsDeleting(false);
     }
@@ -95,10 +97,11 @@ export default function DeleteAccountModal({
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-danger-50">
                 <WarningIcon size={32} weight="fill" className="text-danger-500" />
               </div>
-              <div className="flex flex-col gap-1 pt-4">
-                <h2 className="text-base font-semibold text-neutral-900">Delete your account?</h2>
+              <div className="flex flex-col gap-1">
+                <h2 className="text-base font-semibold text-neutral-900">Delete this course?</h2>
                 <p className="text-sm text-neutral-500">
-                  This removes your profile, all courses, and your sign-in. It cannot be undone.
+                  <span className="font-medium text-neutral-700">"{courseTitle}"</span> and all its
+                  modules will be permanently removed.
                 </p>
               </div>
               <div className="flex w-full flex-col gap-2 pt-1">
@@ -136,7 +139,7 @@ export default function DeleteAccountModal({
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
-                <div className="group relative flex flex-col">
+                <div className="relative flex flex-col">
                   <input
                     type="text"
                     value={input}
@@ -147,9 +150,9 @@ export default function DeleteAccountModal({
                     placeholder="Type DELETE"
                     className="w-full bg-transparent py-2.5 font-mono text-sm text-neutral-900 placeholder-neutral-300 focus:outline-none"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-neutral-200" />
+                  <div className="absolute bottom-0 left-0 right-0 h-px bg-neutral-200" />
                   <motion.div
-                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-danger-500"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-danger-500"
                     animate={{ scaleX: inputFocused ? 1 : 0 }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
                     style={{ originX: 0 }}
@@ -169,7 +172,7 @@ export default function DeleteAccountModal({
                       Deleting…
                     </>
                   ) : (
-                    "Delete my account"
+                    "Delete course"
                   )}
                 </button>
                 <button
@@ -198,8 +201,8 @@ export default function DeleteAccountModal({
                 <CheckCircleIcon size={32} weight="fill" className="text-success-500" />
               </div>
               <div className="flex flex-col gap-1">
-                <h2 className="text-base font-semibold text-neutral-900">Account deleted</h2>
-                <p className="text-sm text-neutral-500">Your data has been removed. Redirecting you now.</p>
+                <h2 className="text-base font-semibold text-neutral-900">Course deleted</h2>
+                <p className="text-sm text-neutral-500">Redirecting you now.</p>
               </div>
             </motion.div>
           )}
