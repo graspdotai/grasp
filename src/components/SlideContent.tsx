@@ -10,22 +10,42 @@ import type { SlideLayout } from "@/lib/courseApi";
 // Math text renderer — parses $...$ inline and $$...$$ block
 // ─────────────────────────────────────────────────────────────
 function MathText({ text, className }: { text: string; className?: string }) {
-  const parts: Array<{ type: "text" | "inline" | "block"; content: string }> = [];
+  const parts: Array<{ type: "text" | "inline" | "block"; content: string }> =
+    [];
   let i = 0;
   let buf = "";
 
   while (i < text.length) {
     if (text[i] === "$" && text[i + 1] === "$") {
-      if (buf) { parts.push({ type: "text", content: buf }); buf = ""; }
+      if (buf) {
+        parts.push({ type: "text", content: buf });
+        buf = "";
+      }
       const end = text.indexOf("$$", i + 2);
-      if (end !== -1) { parts.push({ type: "block", content: text.slice(i + 2, end) }); i = end + 2; }
-      else { buf += "$$"; i += 2; }
+      if (end !== -1) {
+        parts.push({ type: "block", content: text.slice(i + 2, end) });
+        i = end + 2;
+      } else {
+        buf += "$$";
+        i += 2;
+      }
     } else if (text[i] === "$") {
-      if (buf) { parts.push({ type: "text", content: buf }); buf = ""; }
+      if (buf) {
+        parts.push({ type: "text", content: buf });
+        buf = "";
+      }
       const end = text.indexOf("$", i + 1);
-      if (end !== -1) { parts.push({ type: "inline", content: text.slice(i + 1, end) }); i = end + 1; }
-      else { buf += "$"; i += 1; }
-    } else { buf += text[i]; i += 1; }
+      if (end !== -1) {
+        parts.push({ type: "inline", content: text.slice(i + 1, end) });
+        i = end + 1;
+      } else {
+        buf += "$";
+        i += 1;
+      }
+    } else {
+      buf += text[i];
+      i += 1;
+    }
   }
   if (buf) parts.push({ type: "text", content: buf });
 
@@ -33,12 +53,14 @@ function MathText({ text, className }: { text: string; className?: string }) {
     <span className={className}>
       {parts.map((p, idx) =>
         p.type === "block" ? (
-          <span key={idx} className="block my-2"><BlockMath math={p.content} /></span>
+          <span key={idx} className="block my-2">
+            <BlockMath math={p.content} />
+          </span>
         ) : p.type === "inline" ? (
           <InlineMath key={idx} math={p.content} />
         ) : (
           <span key={idx}>{p.content}</span>
-        )
+        ),
       )}
     </span>
   );
@@ -60,7 +82,11 @@ interface DiagramPanelProps {
   large?: boolean;
 }
 
-export function DiagramPanel({ diagramQuery, variant = "dark", large = false }: DiagramPanelProps) {
+export function DiagramPanel({
+  diagramQuery,
+  variant = "dark",
+  large = false,
+}: DiagramPanelProps) {
   const [wiki, setWiki] = useState<WikiSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -72,10 +98,10 @@ export function DiagramPanel({ diagramQuery, variant = "dark", large = false }: 
       const encoded = encodeURIComponent(diagramQuery.trim());
       const res = await fetch(
         `https://en.wikipedia.org/api/rest_v1/page/summary/${encoded}`,
-        { headers: { "Api-User-Agent": "GraspAI/1.0 (education platform)" } }
+        { headers: { "Api-User-Agent": "GraspAI/1.0 (education platform)" } },
       );
       if (!res.ok) throw new Error("Not found");
-      setWiki(await res.json() as WikiSummary);
+      setWiki((await res.json()) as WikiSummary);
     } catch {
       setError(true);
     } finally {
@@ -83,15 +109,22 @@ export function DiagramPanel({ diagramQuery, variant = "dark", large = false }: 
     }
   }, [diagramQuery]);
 
-  useEffect(() => { fetchDiagram(); }, [fetchDiagram]);
+  useEffect(() => {
+    fetchDiagram();
+  }, [fetchDiagram]);
 
   if (loading) {
     return (
       <div
         className={`rounded-2xl overflow-hidden animate-pulse ${
-          variant === "dark" ? "bg-white/10" : "bg-neutral-100 border border-neutral-200"
+          variant === "dark"
+            ? "bg-white/10"
+            : "bg-neutral-100 border border-neutral-200"
         }`}
-        style={{ aspectRatio: large ? "4/3" : "4/3", maxHeight: large ? 420 : 260 }}
+        style={{
+          aspectRatio: large ? "4/3" : "4/3",
+          maxHeight: large ? 420 : 260,
+        }}
       />
     );
   }
@@ -101,10 +134,13 @@ export function DiagramPanel({ diagramQuery, variant = "dark", large = false }: 
   const maxH = large ? 420 : 260;
 
   return (
-    <div className={`rounded-2xl overflow-hidden ${isDark
-      ? "bg-black/30 border border-white/10 backdrop-blur-md shadow-xl"
-      : "bg-white border border-neutral-200 shadow-md"
-    }`}>
+    <div
+      className={`rounded-2xl overflow-hidden ${
+        isDark
+          ? "bg-black/30 border border-white/10 backdrop-blur-md shadow-xl"
+          : "bg-white border border-neutral-200 shadow-md"
+      }`}
+    >
       <div className="relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -114,11 +150,17 @@ export function DiagramPanel({ diagramQuery, variant = "dark", large = false }: 
           style={{ maxHeight: maxH }}
           loading="lazy"
         />
-        <div className={`absolute bottom-0 left-0 right-0 h-10 ${
-          isDark ? "bg-gradient-to-t from-black/60 to-transparent" : "bg-gradient-to-t from-white/80 to-transparent"
-        }`} />
+        <div
+          className={`absolute bottom-0 left-0 right-0 h-10 ${
+            isDark
+              ? "bg-linear-to-t from-black/60 to-transparent"
+              : "bg-linear-to-t from-white/80 to-transparent"
+          }`}
+        />
       </div>
-      <div className={`px-3 py-2 ${isDark ? "text-white/60" : "text-neutral-400"}`}>
+      <div
+        className={`px-3 py-2 ${isDark ? "text-white/60" : "text-neutral-400"}`}
+      >
         <p className="text-[10px] font-medium flex items-center gap-1.5">
           <ImageIcon size={10} />
           <span className="truncate">{wiki.title}</span>
@@ -134,26 +176,40 @@ export function DiagramPanel({ diagramQuery, variant = "dark", large = false }: 
 // ─────────────────────────────────────────────────────────────
 
 /** "title" — large centered title + subtitle hook */
-function TitleLayout({ title, points, variant }: {
-  title: string; points: string[]; variant: "dark" | "light";
+function TitleLayout({
+  title,
+  points,
+  variant,
+}: {
+  title: string;
+  points: string[];
+  variant: "dark" | "light";
 }) {
   const subtitle = points[0] ?? "";
   return (
-    <div className="flex flex-col items-center justify-center text-center h-full gap-6 py-4">
-      <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase ${
-        variant === "dark" ? "bg-white/10 text-white/60 border border-white/10" : "bg-primary/10 text-primary border border-primary/20"
-      }`}>
-        New Topic
+    <div className="flex flex-col items-center justify-center text-center h-full py-4">
+      <div
+        className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium ${
+          variant === "dark"
+            ? "bg-white text-foreground"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        Topic
       </div>
-      <h2 className={`text-3xl md:text-5xl font-serif leading-tight drop-shadow-lg tracking-tight ${
-        variant === "dark" ? "text-white" : "text-neutral-900"
-      }`}>
+      <h2
+        className={`text-3xl md:text-5xl font-serif mb-5 mt-2 leading-tight ${
+          variant === "dark" ? "text-white" : "text-neutral-900"
+        }`}
+      >
         <MathText text={title} />
       </h2>
       {subtitle && (
-        <p className={`text-base md:text-xl font-medium max-w-lg leading-relaxed ${
-          variant === "dark" ? "text-white/70" : "text-neutral-500"
-        }`}>
+        <p
+          className={`text-base md:text-xl font-medium max-w-lg leading-relaxed ${
+            variant === "dark" ? "text-white/70" : "text-neutral-500"
+          }`}
+        >
           <MathText text={subtitle} />
         </p>
       )}
@@ -162,26 +218,44 @@ function TitleLayout({ title, points, variant }: {
 }
 
 /** "statement" — single bold statement, centered, large */
-function StatementLayout({ points, variant }: {
-  points: string[]; variant: "dark" | "light";
+function StatementLayout({
+  points,
+  variant,
+}: {
+  points: string[];
+  variant: "dark" | "light";
 }) {
   const statement = points[0] ?? "";
   return (
     <div className="flex flex-col items-center justify-center text-center h-full gap-4 py-4">
-      <div className={`w-12 h-1 rounded-full ${variant === "dark" ? "bg-white/30" : "bg-primary/30"}`} />
-      <blockquote className={`text-2xl md:text-3xl font-serif leading-snug max-w-2xl drop-shadow-md ${
-        variant === "dark" ? "text-white" : "text-neutral-900"
-      }`}>
+      <div
+        className={`w-12 h-1 rounded-full ${variant === "dark" ? "bg-white/30" : "bg-primary/30"}`}
+      />
+      <blockquote
+        className={`text-2xl md:text-3xl font-serif leading-snug max-w-2xl drop-shadow-md ${
+          variant === "dark" ? "text-white" : "text-neutral-900"
+        }`}
+      >
         <MathText text={`"${statement}"`} />
       </blockquote>
-      <div className={`w-12 h-1 rounded-full ${variant === "dark" ? "bg-white/30" : "bg-primary/30"}`} />
+      <div
+        className={`w-12 h-1 rounded-full ${variant === "dark" ? "bg-white/30" : "bg-primary/30"}`}
+      />
     </div>
   );
 }
 
 /** "visual" — diagram center stage, small callout pills below/beside */
-function VisualLayout({ title, points, diagramQuery, variant }: {
-  title: string; points: string[]; diagramQuery?: string | null; variant: "dark" | "light";
+function VisualLayout({
+  title,
+  points,
+  diagramQuery,
+  variant,
+}: {
+  title: string;
+  points: string[];
+  diagramQuery?: string | null;
+  variant: "dark" | "light";
 }) {
   return (
     <div className="flex flex-col gap-5 h-full">
@@ -211,24 +285,36 @@ function VisualLayout({ title, points, diagramQuery, variant }: {
 }
 
 /** "two-col" — points split evenly into two columns */
-function TwoColLayout({ points, variant, pointClassName }: {
-  points: string[]; variant: "dark" | "light"; pointClassName?: string;
+function TwoColLayout({
+  points,
+  variant,
+  pointClassName,
+}: {
+  points: string[];
+  variant: "dark" | "light";
+  pointClassName?: string;
 }) {
   const mid = Math.ceil(points.length / 2);
   const left = points.slice(0, mid);
   const right = points.slice(mid);
   const isDark = variant === "dark";
-  const textClass = pointClassName || (isDark
-    ? "text-sm md:text-base text-white/90 leading-relaxed"
-    : "text-xs md:text-sm text-neutral-800 leading-relaxed");
+  const textClass =
+    pointClassName ||
+    (isDark
+      ? "text-sm md:text-base text-white/90 leading-relaxed"
+      : "text-xs md:text-sm text-neutral-800 leading-relaxed");
 
   return (
     <div className="grid grid-cols-2 gap-x-8 gap-y-1 h-full">
       {/* Left column */}
-      <div className={`flex flex-col gap-3 border-r pr-6 ${isDark ? "border-white/10" : "border-neutral-100"}`}>
+      <div
+        className={`flex flex-col gap-3 border-r pr-6 ${isDark ? "border-white/10" : "border-neutral-100"}`}
+      >
         {left.map((p, i) => (
           <div key={i} className="flex items-start gap-3">
-            <span className={`font-bold text-sm mt-0.5 flex-shrink-0 ${isDark ? "text-white/50" : "text-primary/60"}`}>
+            <span
+              className={`font-bold text-sm mt-0.5 shrink-0 ${isDark ? "text-white/50" : "text-primary/60"}`}
+            >
               {String(i + 1).padStart(2, "0")}
             </span>
             <MathText text={p} className={textClass} />
@@ -239,7 +325,9 @@ function TwoColLayout({ points, variant, pointClassName }: {
       <div className="flex flex-col gap-3 pl-2">
         {right.map((p, i) => (
           <div key={i} className="flex items-start gap-3">
-            <span className={`font-bold text-sm mt-0.5 flex-shrink-0 ${isDark ? "text-white/50" : "text-primary/60"}`}>
+            <span
+              className={`font-bold text-sm mt-0.5 shrink-0 ${isDark ? "text-white/50" : "text-primary/60"}`}
+            >
               {String(mid + i + 1).padStart(2, "0")}
             </span>
             <MathText text={p} className={textClass} />
@@ -251,20 +339,34 @@ function TwoColLayout({ points, variant, pointClassName }: {
 }
 
 /** "bullets" — standard bullet list, optionally with a diagram beside */
-function BulletsLayout({ points, diagramQuery, variant, pointClassName }: {
-  points: string[]; diagramQuery?: string | null; variant: "dark" | "light"; pointClassName?: string;
+function BulletsLayout({
+  points,
+  diagramQuery,
+  variant,
+  pointClassName,
+}: {
+  points: string[];
+  diagramQuery?: string | null;
+  variant: "dark" | "light";
+  pointClassName?: string;
 }) {
   const isDark = variant === "dark";
-  const textClass = pointClassName || (isDark
-    ? "text-sm md:text-base text-white/90 font-medium leading-relaxed drop-shadow-sm"
-    : "text-xs md:text-sm text-white/90 font-medium leading-relaxed drop-shadow-sm");
+  const textClass =
+    pointClassName ||
+    (isDark
+      ? "text-sm md:text-base text-white/90 font-medium leading-relaxed drop-shadow-sm"
+      : "text-xs md:text-sm text-white/90 font-medium leading-relaxed drop-shadow-sm");
 
   return (
-    <div className={`flex gap-6 ${diagramQuery ? "flex-col lg:flex-row" : "flex-col"}`}>
+    <div
+      className={`flex gap-6 ${diagramQuery ? "flex-col lg:flex-row" : "flex-col"}`}
+    >
       <div className="flex flex-col gap-3 flex-1 min-w-0">
         {points.map((p, i) => (
           <div key={i} className="flex items-start gap-3">
-            <span className={`font-bold text-sm mt-0.5 flex-shrink-0 ${isDark ? "text-white/60" : "text-neutral-400"}`}>
+            <span
+              className={`font-bold text-sm mt-0.5 shrink-0 ${isDark ? "text-white/60" : "text-neutral-400"}`}
+            >
               •
             </span>
             <MathText text={p} className={textClass} />
@@ -272,7 +374,7 @@ function BulletsLayout({ points, diagramQuery, variant, pointClassName }: {
         ))}
       </div>
       {diagramQuery && (
-        <div className="w-full lg:w-60 xl:w-72 flex-shrink-0">
+        <div className="w-full lg:w-60 xl:w-72 shrink-0">
           <DiagramPanel diagramQuery={diagramQuery} variant={variant} />
         </div>
       )}
@@ -311,10 +413,23 @@ export default function SlideContent({
     return <StatementLayout points={points} variant={variant} />;
   }
   if (l === "visual") {
-    return <VisualLayout title={title} points={points} diagramQuery={diagramQuery} variant={variant} />;
+    return (
+      <VisualLayout
+        title={title}
+        points={points}
+        diagramQuery={diagramQuery}
+        variant={variant}
+      />
+    );
   }
   if (l === "two-col") {
-    return <TwoColLayout points={points} variant={variant} pointClassName={pointClassName} />;
+    return (
+      <TwoColLayout
+        points={points}
+        variant={variant}
+        pointClassName={pointClassName}
+      />
+    );
   }
   return (
     <BulletsLayout
