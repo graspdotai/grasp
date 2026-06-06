@@ -16,11 +16,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/hooks/useProfile";
 
 export default function Navbar() {
+  const [mounted, setMounted] = useState(false);
   const userId = getLocalUserId();
-  const { data: profileRow } = useProfile();
+  const { data: profileRow, isLoading } = useProfile();
   const [profile, setProfile] = useState<UserAvatarProfile | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   useEffect(() => {
     if (!profileRow) {
       if (!userId) setProfile(null);
@@ -60,7 +65,15 @@ export default function Navbar() {
       </Link>
 
       <div className="flex items-center gap-3">
-        {profile ? (
+        {!mounted || (userId && isLoading) ? (
+          <div className="flex items-center gap-2 rounded-full pl-1 pr-3 py-1 animate-pulse">
+            <div className="h-10 w-10 bg-neutral-200 rounded-full" />
+            <div className="flex flex-col gap-1.5 hidden sm:flex">
+              <div className="h-2.5 w-24 bg-neutral-200 rounded-md" />
+              <div className="h-3.5 w-32 bg-neutral-200 rounded-md" />
+            </div>
+          </div>
+        ) : profile ? (
           <div className="relative" ref={dropdownRef}>
             <button
               type="button"

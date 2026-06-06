@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { PlusIcon } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -8,9 +9,14 @@ import { useUserCourses } from "@/hooks/useCourses";
 import { getLocalUserId } from "@/lib/userSession";
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const userId = getLocalUserId();
   const { data: courses = [], isLoading, isFetched } = useUserCourses();
   const courseCount = courses.length;
+
+  const showLoading = !mounted || isLoading;
 
   return (
     <main className="p-6 max-w-7xl mx-auto">
@@ -19,7 +25,7 @@ export default function Home() {
       <div className="flex items-center gap-3">
         <h1 className="text-4xl tracking-tight font-bold mt-8 mb-5">Courses</h1>
         <h1 className="text-4xl tracking-tight font-bold mt-8 mb-5 text-neutral-300">
-          {isLoading ? "…" : courseCount}
+          {showLoading ? "…" : courseCount}
         </h1>
       </div>
 
@@ -50,7 +56,7 @@ export default function Home() {
           </div>
         </Link>
 
-        {isLoading && (
+        {showLoading && (
           <>
             <div className="relative group animate-pulse">
               <div className="w-full aspect-video bg-neutral-200 rounded-2xl" />
@@ -78,24 +84,22 @@ export default function Home() {
           </>
         )}
 
-        {isFetched && !userId && (
+        {mounted && isFetched && !userId && (
           <p className="col-span-full text-sm text-neutral-500 py-4">
-            <Link href="/signin" className="text-primary font-semibold hover:underline">
+            <Link
+              href="/signin"
+              className="text-primary font-semibold hover:underline"
+            >
               Sign in
             </Link>{" "}
             to see your courses.
           </p>
         )}
 
-        {isFetched && userId && courses.length === 0 && (
-          <p className="col-span-full text-sm text-neutral-500 py-4">
-            No courses yet. Create one with the card on the left.
-          </p>
-        )}
-
-        {courses.map((course) => (
-          <CourseCard key={course.id} course={course} />
-        ))}
+        {mounted &&
+          courses.map((course) => (
+            <CourseCard key={course.id} course={course} />
+          ))}
       </div>
     </main>
   );
