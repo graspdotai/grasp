@@ -107,9 +107,12 @@ export default function NewCoursePage() {
   }
 
   return (
-    <main className="min-h-screen mesh-gradient-light text-neutral-900 pb-24 relative overflow-hidden">
+    <main className="min-h-screen bg-white text-neutral-900 pb-24 relative overflow-hidden">
       {/* Subtle grid pattern for premium texture */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-25 pointer-events-none select-none" aria-hidden="true" />
+      <div
+        className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-25 pointer-events-none select-none"
+        aria-hidden="true"
+      />
 
       <div className="max-w-7xl mx-auto px-5 py-5 sm:px-8 sm:py-6 relative z-10">
         <Navbar />
