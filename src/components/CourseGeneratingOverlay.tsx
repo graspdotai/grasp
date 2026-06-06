@@ -78,18 +78,16 @@ export default function CourseGeneratingOverlay({
               </AnimatePresence>
             </div>
 
-            {/* A single clean, minimal spinner in our brand color */}
-            <div className="mt-10">
-              <Spinner className="text-primary" size={28} />
-            </div>
+            <div className="flex items-center gap-2">
+              <div>
+                <Spinner className="text-neutral-700" size={28} />
+              </div>
 
-            <p className="text-neutral-500 tracking-wide mt-12 text-sm sm:text-base">
-              Working on your course on{" "}
-              <span className="text-neutral-900 font-semibold italic">
-                {" "}
-                {topic}
-              </span>
-            </p>
+              <p className="text-neutral-500 tracking-wide mt-12 text-sm sm:text-base">
+                Working on your course on{" "}
+                <span className="text-neutral-900 font-semibold"> {topic}</span>
+              </p>
+            </div>
           </div>
         </motion.div>
       )}

@@ -18,7 +18,7 @@ export async function generateAethexTts(
       text,
       language,
       streaming: false,
-      voice_id: "9ac12fd0-9024-506d-805a-9ff50bbf97a6",
+      voice_id: "52f5a931-0eac-5a77-94e7-aa3053e99739",
     }),
   });
 
