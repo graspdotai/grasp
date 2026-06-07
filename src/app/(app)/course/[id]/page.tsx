@@ -71,7 +71,7 @@ export default function CoursePage({
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsClassroomFullscreen(
-        document.fullscreenElement === classroomSlideRef.current,
+        !!document.fullscreenElement && document.fullscreenElement === classroomSlideRef.current,
       );
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
@@ -332,6 +332,10 @@ export default function CoursePage({
 
   // Close audio player & clean up
   const closeAudioClass = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(console.error);
+    }
+    setIsClassroomFullscreen(false);
     setIsPlayingClass(false);
     setIsTTSLoading(false);
     setIsSlideSelectorOpen(false);
