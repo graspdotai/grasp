@@ -120,10 +120,6 @@ export async function proxy(request: NextRequest) {
     return redirect(request, ONBOARDING_ROUTE);
   }
 
-  if (hasCompletedOnboarding && pathname === ONBOARDING_ROUTE) {
-    return redirect(request, "/");
-  }
-
   return response;
 }
 
