@@ -66,30 +66,27 @@ declare global {
   }
 }
 
-const BAR_HEIGHTS = [10, 18, 30, 22, 38, 18, 28, 14, 34, 20, 26];
+const BAR_HEIGHTS = [3, 6, 10, 6, 3];
 
 function VoiceBars({ active }: { active: boolean }) {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div
-      className="flex h-12 items-center justify-center gap-1.5"
-      aria-hidden="true"
-    >
+    <div className="flex h-4 items-end gap-0.5" aria-hidden="true">
       {BAR_HEIGHTS.map((height, index) => (
         <motion.span
-          key={`${height}-${index}`}
-          className="w-1.5 rounded-full bg-primary"
+          key={index}
+          className={`w-0.5 rounded-full ${active ? "bg-primary" : "bg-neutral-300"}`}
           animate={
             active && !shouldReduceMotion
-              ? { height: [height, height + 16, height] }
+              ? { height: [height, height * 2.2, height] }
               : { height }
           }
           transition={{
-            duration: 0.55 + index * 0.03,
+            duration: 0.6,
             repeat: active && !shouldReduceMotion ? Infinity : 0,
             ease: "easeInOut",
-            delay: index * 0.04,
+            delay: index * 0.08,
           }}
         />
       ))}
@@ -99,13 +96,19 @@ function VoiceBars({ active }: { active: boolean }) {
 
 function AudioReply({
   message,
+  autoPlay = true,
   onPlayStateChange,
+  onDismiss,
 }: {
   message: TutorMessage;
+  autoPlay?: boolean;
   onPlayStateChange?: (playing: boolean) => void;
+  onDismiss?: () => void;
 }) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const autoPlayRef = useRef(autoPlay);
+  autoPlayRef.current = autoPlay;
 
   useEffect(() => {
     onPlayStateChange?.(playing);
@@ -117,10 +120,10 @@ function AudioReply({
     const audio = new Audio(message.audioUrl);
     audioRef.current = audio;
     audio.onended = () => setPlaying(false);
-    audio
-      .play()
-      .then(() => setPlaying(true))
-      .catch(() => setPlaying(false));
+
+    if (autoPlayRef.current) {
+      audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+    }
 
     return () => {
       audio.pause();
@@ -150,11 +153,12 @@ function AudioReply({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2 }}
-        className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-5 mt-4"
+        className="flex items-center gap-3"
       >
-        <div className="flex items-center justify-center">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100">
           <VoiceBars active />
         </div>
+        <p className="text-sm text-neutral-500">Preparing answer…</p>
       </motion.div>
     );
   }
@@ -164,28 +168,30 @@ function AudioReply({
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 mt-4">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={togglePlay}
+        aria-label={playing ? "Pause answer" : "Play answer"}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-white hover:bg-primary-600 transition-colors"
+      >
+        {playing ? <PauseIcon size={15} weight="fill" /> : <PlayIcon size={15} weight="fill" />}
+      </button>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-neutral-800">Tutor's answer</p>
+        <p className="text-xs text-neutral-400">{playing ? "Playing…" : "Tap to replay"}</p>
+      </div>
+      <VoiceBars active={playing} />
+      {onDismiss && (
         <button
           type="button"
-          onClick={togglePlay}
-          aria-label={playing ? "Pause spoken answer" : "Play spoken answer"}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors duration-150 ease-out hover:bg-primary-600"
+          onClick={() => { audioRef.current?.pause(); onDismiss(); }}
+          aria-label="Dismiss answer"
+          className="ml-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 transition-colors"
         >
-          {playing ? (
-            <PauseIcon size={17} weight="fill" />
-          ) : (
-            <PlayIcon size={17} weight="fill" />
-          )}
+          <XIcon size={14} weight="bold" />
         </button>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-neutral-900">
-            Tutor answered out loud
-          </p>
-          <p className="truncate text-xs text-neutral-500">Audio response</p>
-        </div>
-        <VoiceBars active={playing} />
-      </div>
+      )}
     </div>
   );
 }
@@ -214,6 +220,10 @@ export default function CourseTutorPanel({
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [interimTranscript, setInterimTranscript] = useState("");
   const [isAwake, setIsAwake] = useState(false);
+  const [isAudioDismissed, setIsAudioDismissed] = useState(false);
+  const [isTutorAudioPlaying, setIsTutorAudioPlaying] = useState(false);
+  const isTutorAudioPlayingRef = useRef(false);
+  const playedMessageIdsRef = useRef<Set<string>>(new Set());
   const isAwakeRef = useRef(isAwake);
 
   const isOpenRef = useRef(isOpen);
@@ -238,9 +248,17 @@ export default function CourseTutorPanel({
   }, [isAnswering, isAwake]);
 
   useEffect(() => {
+    setIsAudioDismissed(false);
+  }, [tutorMessage?.id]);
+
+  useEffect(() => {
     isAwakeRef.current = isAwake;
     onRecordingStateChangeRef.current?.(isAwake);
   }, [isAwake]);
+
+  useEffect(() => {
+    isTutorAudioPlayingRef.current = isTutorAudioPlaying;
+  }, [isTutorAudioPlaying]);
 
   const transcript =
     `${draft}${interimTranscript ? ` ${interimTranscript}` : ""}`.trim();
@@ -278,11 +296,12 @@ export default function CourseTutorPanel({
       );
       setIsRecording(false);
 
-      // Auto-restart only if panel is open, active, and we are not currently answering.
+      // Auto-restart only if panel is open, active, not answering, and tutor audio is not playing.
       if (
         isOpenRef.current &&
         isAwakeRef.current &&
         !isAnsweringRef.current &&
+        !isTutorAudioPlayingRef.current &&
         shouldRestart
       ) {
         const restartDelay = lastErrorRef.current === "aborted" ? 3000 : 0;
@@ -294,6 +313,7 @@ export default function CourseTutorPanel({
             !isOpenRef.current ||
             !isAwakeRef.current ||
             isAnsweringRef.current ||
+            isTutorAudioPlayingRef.current ||
             !shouldRestart
           )
             return;
@@ -411,9 +431,11 @@ export default function CourseTutorPanel({
     if (isOpen) {
       setIsAwake(true);
       onDraftChangeRef.current("");
+      setIsTutorAudioPlaying(false);
     } else {
       setIsAwake(false);
       setInterimTranscript("");
+      setIsTutorAudioPlaying(false);
     }
   }, [isOpen]);
 
@@ -421,7 +443,7 @@ export default function CourseTutorPanel({
   useEffect(() => {
     if (!speechSupported || !recognitionRef.current) return;
 
-    const shouldListen = isOpen && isAwake && !isAnswering;
+    const shouldListen = isOpen && isAwake && !isAnswering && !isTutorAudioPlaying;
 
     if (shouldListen) {
       if (!isRecording) {
@@ -449,7 +471,7 @@ export default function CourseTutorPanel({
         }
       }
     }
-  }, [isOpen, isAwake, isAnswering, isRecording, speechSupported]);
+  }, [isOpen, isAwake, isAnswering, isTutorAudioPlaying, isRecording, speechSupported]);
 
   const toggleMic = () => {
     if (!speechSupported) return;
@@ -498,8 +520,8 @@ export default function CourseTutorPanel({
   };
 
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-5 z-[70] flex justify-end sm:inset-x-auto sm:right-6">
-      <div className="pointer-events-auto flex w-full max-w-[25rem] flex-col items-end gap-3">
+    <div className="pointer-events-none fixed bottom-5 right-4 z-[70] sm:right-6">
+      <div className="pointer-events-auto flex w-full max-w-[25rem] sm:w-[25rem] flex-col items-end gap-3">
         <AnimatePresence initial={false}>
           {isOpen && (
             <motion.section
@@ -518,94 +540,74 @@ export default function CourseTutorPanel({
                 ease: "easeOut",
               }}
               aria-label="Voice question recorder"
-              className="w-full overflow-hidden rounded-3xl border border-neutral-200 bg-white text-neutral-900 shadow-2xl shadow-black/10 backdrop-blur-xl"
+              className="w-full overflow-hidden rounded-2xl border border-neutral-200 bg-white text-neutral-900 shadow-xl shadow-black/8"
             >
-              <div className="space-y-4 px-4 py-4">
-                <div className="rounded-3xl border border-neutral-100 bg-neutral-50 px-4 py-5 text-center">
-                  <button
-                    onClick={toggleMic}
-                    className={`flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300 shadow-xl border cursor-pointer mx-auto ${
-                      isAwake
-                        ? "bg-danger-500 text-white hover:bg-danger-600 border-danger-400"
-                        : "bg-white text-neutral-900 hover:bg-neutral-100 border-neutral-200/60"
-                    } ${!speechSupported && "opacity-50 cursor-not-allowed"}`}
-                    disabled={!speechSupported}
-                    title={
-                      !speechSupported
-                        ? "Speech recognition not supported"
-                        : isAwake
-                          ? "Click to submit"
-                          : "Start asking"
-                    }
-                  >
-                    {isAwake ? (
-                      <div className="flex gap-1 items-center">
-                        <motion.div
-                          animate={{ height: ["8px", "16px", "8px"] }}
-                          transition={{ repeat: Infinity, duration: 1 }}
-                          className="w-1.5 bg-white rounded-full"
-                        />
-                        <motion.div
-                          animate={{ height: ["12px", "20px", "12px"] }}
-                          transition={{
-                            repeat: Infinity,
-                            duration: 1,
-                            delay: 0.2,
-                          }}
-                          className="w-1.5 bg-white rounded-full"
-                        />
-                        <motion.div
-                          animate={{ height: ["8px", "16px", "8px"] }}
-                          transition={{
-                            repeat: Infinity,
-                            duration: 1,
-                            delay: 0.4,
-                          }}
-                          className="w-1.5 bg-white rounded-full"
-                        />
-                      </div>
-                    ) : (
-                      <MicrophoneIcon size={24} weight="fill" />
-                    )}
-                  </button>
-
-                  <div className="mt-4">
-                    <p className="mt-2 text-sm font-medium text-neutral-600">
-                      {isRecording
-                        ? "Listening..."
-                        : isAnswering
-                          ? "Thinking through your question"
-                          : "Tap to record your question"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="min-h-20 rounded-2xl border border-neutral-100 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-                    Heard
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-700">
-                    {transcript ||
-                      "Your question will appear here while you speak."}
-                  </p>
-                </div>
-
-                {speechError && (
-                  <p className="rounded-2xl border border-danger-500/20 bg-danger-500/10 px-4 py-3 text-sm text-danger-600 mt-2">
-                    {speechError}
-                  </p>
-                )}
-
-                {tutorMessage &&
-                  (tutorMessage.audioLoading || tutorMessage.audioUrl) && (
-                    <div className="pt-2">
-                      <AudioReply
-                        message={tutorMessage}
-                        onPlayStateChange={onTutorAudioPlayStateChange}
-                      />
+              {/* Mic + status */}
+              <div className="flex flex-col items-center gap-3 px-5 pt-6 pb-5">
+                <button
+                  onClick={toggleMic}
+                  disabled={!speechSupported}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${
+                    isAwake
+                      ? "border-danger-400 bg-danger-500 text-white hover:bg-danger-600"
+                      : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                  } ${!speechSupported ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
+                >
+                  {isAwake ? (
+                    <div className="flex items-center gap-[3px]">
+                      <motion.div animate={{ height: ["4px", "10px", "4px"] }} transition={{ repeat: Infinity, duration: 0.9 }} className="w-[3px] rounded-full bg-white" />
+                      <motion.div animate={{ height: ["7px", "14px", "7px"] }} transition={{ repeat: Infinity, duration: 0.9, delay: 0.15 }} className="w-[3px] rounded-full bg-white" />
+                      <motion.div animate={{ height: ["4px", "10px", "4px"] }} transition={{ repeat: Infinity, duration: 0.9, delay: 0.3 }} className="w-[3px] rounded-full bg-white" />
                     </div>
+                  ) : (
+                    <MicrophoneIcon size={17} weight="regular" />
                   )}
+                </button>
+
+                <p className="text-xs text-neutral-400">
+                  {isRecording ? "Listening…" : isAnswering ? "Thinking…" : "Tap to ask a question"}
+                </p>
               </div>
+
+              {/* Divider */}
+              <div className="h-px bg-neutral-100" />
+
+              {/* Transcript */}
+              <div className="px-5 py-4 min-h-16">
+                <p className={`text-sm leading-relaxed ${transcript ? "text-neutral-800" : "text-neutral-400"}`}>
+                  {transcript || "Your question will appear here…"}
+                </p>
+              </div>
+
+              {/* Error */}
+              {speechError && (
+                <div className="mx-5 mb-4 rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-600">
+                  {speechError}
+                </div>
+              )}
+
+              {/* Audio reply */}
+              {tutorMessage && !isAudioDismissed && (tutorMessage.audioLoading || tutorMessage.audioUrl) && (
+                <>
+                  <div className="h-px bg-neutral-100" />
+                  <div className="px-5 py-4">
+                    <AudioReply
+                      message={tutorMessage}
+                      autoPlay={!playedMessageIdsRef.current.has(tutorMessage.id)}
+                      onPlayStateChange={(playing) => {
+                        if (playing) playedMessageIdsRef.current.add(tutorMessage.id);
+                        setIsTutorAudioPlaying(playing);
+                        if (playing) setInterimTranscript("");
+                        onTutorAudioPlayStateChange?.(playing);
+                      }}
+                      onDismiss={() => {
+                        setIsAudioDismissed(true);
+                        setIsTutorAudioPlaying(false);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </motion.section>
           )}
         </AnimatePresence>
@@ -615,56 +617,38 @@ export default function CourseTutorPanel({
           type="button"
           onClick={onToggle}
           aria-expanded={isOpen}
-          aria-label={isOpen ? "Hide voice questions" : "Open voice questions"}
+          aria-label={isOpen ? "Close" : "Ask a question"}
           transition={{
-            duration: shouldReduceMotion ? 0 : 0.22,
+            duration: shouldReduceMotion ? 0 : 0.2,
             ease: [0.4, 0, 0.2, 1],
           }}
-          className={`flex h-14 items-center justify-center overflow-hidden rounded-full shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 ${
-            isOpen
-              ? "w-14 bg-neutral-100 text-neutral-800 shadow-black/10 hover:bg-neutral-200"
-              : "border border-neutral-200 bg-white pl-2 pr-5 text-neutral-900 shadow-black/10 hover:border-neutral-300 hover:bg-neutral-50 active:scale-[0.97]"
+          className={`flex h-12 items-center justify-center overflow-hidden rounded-full bg-white/80 backdrop-blur-md ring-1 ring-black/[0.08] shadow-xl shadow-black/[0.08] transition-colors hover:bg-white/95 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+            isOpen ? "w-12" : "gap-2 pl-4 pr-5"
           }`}
         >
           <AnimatePresence mode="wait" initial={false}>
             {isOpen ? (
               <motion.span
                 key="x"
-                initial={
-                  shouldReduceMotion
-                    ? {}
-                    : { scale: 0.6, opacity: 0, rotate: -45 }
-                }
+                initial={shouldReduceMotion ? {} : { scale: 0.7, opacity: 0, rotate: -45 }}
                 animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                exit={
-                  shouldReduceMotion
-                    ? {}
-                    : { scale: 0.6, opacity: 0, rotate: 45 }
-                }
-                transition={{
-                  duration: shouldReduceMotion ? 0 : 0.15,
-                  ease: "easeOut",
-                }}
-                className="flex items-center justify-center"
+                exit={shouldReduceMotion ? {} : { scale: 0.7, opacity: 0, rotate: 45 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+                className="flex items-center justify-center text-neutral-500"
               >
-                <XIcon size={20} weight="bold" />
+                <XIcon size={15} weight="bold" />
               </motion.span>
             ) : (
               <motion.span
                 key="closed"
-                initial={shouldReduceMotion ? {} : { opacity: 0, x: 6 }}
+                initial={shouldReduceMotion ? {} : { opacity: 0, x: 8 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={shouldReduceMotion ? {} : { opacity: 0, x: 6 }}
-                transition={{
-                  duration: shouldReduceMotion ? 0 : 0.15,
-                  ease: "easeOut",
-                }}
-                className="flex items-center gap-3"
+                exit={shouldReduceMotion ? {} : { opacity: 0, x: 8 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.14, ease: "easeOut" }}
+                className="flex items-center gap-2"
               >
-                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary shadow-md shadow-primary/30">
-                  <MicrophoneIcon size={18} weight="fill" />
-                </span>
-                <span className="text-sm font-semibold">Ask anything</span>
+                <MicrophoneIcon size={17} weight="regular" className="text-primary" />
+                <span className="text-sm font-medium text-neutral-700 tracking-tight">Ask anything</span>
               </motion.span>
             )}
           </AnimatePresence>

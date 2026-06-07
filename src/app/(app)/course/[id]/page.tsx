@@ -96,6 +96,9 @@ export default function CoursePage({
   const [isTTSLoading, setIsTTSLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [ttsFallback, setTtsFallback] = useState<boolean>(false);
+  const [isAudioPaused, setIsAudioPaused] = useState<boolean>(false);
+  const [playbackRate, setPlaybackRate] = useState<number>(1);
+  const playbackRateRef = useRef<number>(1);
   const [isQuestionPanelOpen, setIsQuestionPanelOpen] =
     useState<boolean>(false);
   const [questionDraft, setQuestionDraft] = useState<string>("");
@@ -397,6 +400,9 @@ export default function CoursePage({
       }
 
       const audio = new Audio(url);
+      audio.playbackRate = playbackRateRef.current;
+      audio.onplay = () => setIsAudioPaused(false);
+      audio.onpause = () => setIsAudioPaused(true);
       audioRef.current = audio;
 
       audio.onended = () => {
@@ -436,10 +442,12 @@ export default function CoursePage({
       audio.play().catch((err) => {
         console.error("Audio autoplay error:", err);
         setTtsFallback(true);
+        setIsAudioPaused(true);
       });
     } catch (err: any) {
       console.warn("Aethex TTS synthesis fell back to simulation.", err);
       setTtsFallback(true);
+      setIsAudioPaused(true);
     } finally {
       setIsTTSLoading(false);
     }
@@ -495,12 +503,14 @@ export default function CoursePage({
       } else {
         audioRef.current.pause();
       }
-      // Force render update
-      setTtsFallback((prev) => prev);
-    } else if (ttsFallback) {
-      // If we are in fallback, toggle a simulated play state
-      setTtsFallback(false);
-      setTimeout(() => setTtsFallback(true), 50);
+    }
+  };
+
+  const handleSpeedChange = (rate: number) => {
+    setPlaybackRate(rate);
+    playbackRateRef.current = rate;
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
     }
   };
 
@@ -1019,17 +1029,38 @@ export default function CoursePage({
                 </div>
               </div>
 
-              {/* <button
-                onClick={() => setIsSlideSelectorOpen((prev) => !prev)}
-                className={`p-3 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center border border-neutral-200/60 ${
-                  isSlideSelectorOpen
-                    ? "bg-primary text-white border-primary"
-                    : "bg-white hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800"
-                }`}
-                title="Select Slide"
-              >
-                <SquaresFourIcon size={20} weight="bold" />
-              </button> */}
+              {!isClassEnded && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={togglePlayPause}
+                    disabled={isTTSLoading}
+                    title={isAudioPaused ? "Play" : "Pause"}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200/60 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 transition-all disabled:opacity-40 cursor-pointer"
+                  >
+                    {isAudioPaused ? (
+                      <PlayIcon size={15} weight="fill" />
+                    ) : (
+                      <PauseIcon size={15} weight="fill" />
+                    )}
+                  </button>
+
+                  <div className="flex items-center rounded-full bg-neutral-100 p-0.5">
+                    {([0.5, 1, 1.5, 2] as const).map((rate) => (
+                      <button
+                        key={rate}
+                        onClick={() => handleSpeedChange(rate)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                          playbackRate === rate
+                            ? "bg-white text-neutral-900 shadow-sm"
+                            : "text-neutral-400 hover:text-neutral-700"
+                        }`}
+                      >
+                        {rate}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grow grid grid-cols-1 lg:grid-cols-12 gap-5 my-6 overflow-hidden min-h-0 relative">
@@ -1095,7 +1126,20 @@ export default function CoursePage({
               </AnimatePresence>
               <CourseTutorPanel
                 isOpen={isQuestionPanelOpen}
-                onToggle={() => setIsQuestionPanelOpen((prev) => !prev)}
+                onToggle={() => {
+                  const opening = !isQuestionPanelOpen;
+                  setIsQuestionPanelOpen(opening);
+                  if (opening) {
+                    audioRef.current?.pause();
+                  } else if (
+                    audioRef.current?.paused &&
+                    !audioRef.current?.ended &&
+                    !isAnsweringQuestion &&
+                    !isClassEnded
+                  ) {
+                    audioRef.current?.play().catch(() => setTtsFallback(true));
+                  }
+                }}
                 sectionTitle={activeSection.title}
                 isAnswering={isAnsweringQuestion}
                 onSubmitQuestion={submitQuestion}
@@ -1111,6 +1155,7 @@ export default function CoursePage({
                   if (isRecording) {
                     audioRef.current?.pause();
                   } else if (
+                    !isQuestionPanelOpen &&
                     !isAnsweringQuestion &&
                     audioRef.current?.paused &&
                     !audioRef.current?.ended &&
@@ -1120,16 +1165,16 @@ export default function CoursePage({
                   }
                 }}
                 onTutorAudioPlayStateChange={(isPlaying) => {
-                  if (
-                    !isPlaying &&
+                  if (isPlaying) {
+                    audioRef.current?.pause();
+                  } else if (
+                    !isQuestionPanelOpen &&
                     !isAnsweringQuestion &&
                     audioRef.current?.paused &&
                     !audioRef.current?.ended &&
                     !isClassEnded
                   ) {
                     audioRef.current?.play().catch(() => setTtsFallback(true));
-                  } else if (isPlaying) {
-                    audioRef.current?.pause();
                   }
                 }}
               />
