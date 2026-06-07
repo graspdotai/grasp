@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import LogoIcon from "@/components/Logo";
 import { GoogleIcon, VisibilityIcon } from "@/components/auth/icons";
@@ -9,8 +9,14 @@ import { signInWithEmail, signInWithGoogle } from "@/lib/auth/client";
 import Spinner from "@/components/Spinner";
 import { toast } from "sonner";
 
+function safeNextPath(next: string | null): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/";
+  return next;
+}
+
 export default function SigninForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,11 +36,13 @@ export default function SigninForm() {
       return;
     }
 
-    router.push(result.redirectTo ?? "/");
+    const next = safeNextPath(searchParams.get("next"));
+    router.push(next !== "/" ? next : (result.redirectTo ?? "/"));
   }
 
   async function handleGoogleSignIn() {
-    const result = await signInWithGoogle("/");
+    const next = safeNextPath(searchParams.get("next"));
+    const result = await signInWithGoogle(next);
 
     if (!result.ok) {
       toast.error(result.message);

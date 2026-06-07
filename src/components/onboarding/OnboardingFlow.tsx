@@ -142,7 +142,6 @@ export default function OnboardingFlow() {
       }
 
       setIsComplete(true);
-      window.setTimeout(() => router.push("/"), reduceMotion ? 0 : 700);
       return;
     }
 
@@ -188,6 +187,13 @@ export default function OnboardingFlow() {
                 We&apos;re preparing course recommendations that match your goals
                 and learning style.
               </p>
+              <button
+                onClick={() => router.push("/")}
+                className="mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-7 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              >
+                Get started
+                <ArrowRight aria-hidden size={16} weight="bold" />
+              </button>
             </motion.section>
           ) : (
             <motion.section
