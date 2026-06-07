@@ -19,6 +19,7 @@ async function testOpenAIKey() {
 
     console.log("=========================");
     console.log("Status:", response.status);
+    console.log("=========================");
     console.log(data);
   } catch (error) {
     console.error("Request failed:", error);
