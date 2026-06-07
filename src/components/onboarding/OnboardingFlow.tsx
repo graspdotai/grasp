@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
 import LogoIcon from "@/components/Logo";
@@ -69,7 +68,6 @@ const LESSON_LENGTHS = ["5 min", "10 min", "15 min"] as const;
 type SelectionMap = Record<number, string[]>;
 
 export default function OnboardingFlow() {
-  const router = useRouter();
   const reduceMotion = useReducedMotion();
   const [step, setStep] = useState(0);
   const [selections, setSelections] = useState<SelectionMap>({ 0: [], 1: [] });
@@ -126,7 +124,7 @@ export default function OnboardingFlow() {
         setErrorMessage(result.message);
 
         if (result.message.toLowerCase().includes("sign in")) {
-          window.setTimeout(() => router.push("/signin"), 900);
+          window.setTimeout(() => window.location.assign("/signin"), 900);
         }
 
         return;
@@ -189,8 +187,9 @@ export default function OnboardingFlow() {
               </p>
 
               <button
-                onClick={() => router.push("/")}
+                onClick={() => window.location.assign("/")}
                 className="mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-7 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                type="button"
               >
                 Get started
                 <ArrowRight aria-hidden size={16} weight="bold" />
