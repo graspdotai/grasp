@@ -79,10 +79,12 @@ export async function proxy(request: NextRequest) {
   if (!user && !isAuthRoute(pathname) && !isPublicRoute(pathname)) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/signin";
-    redirectUrl.searchParams.set(
-      "next",
-      `${request.nextUrl.pathname}${request.nextUrl.search}`,
-    );
+    redirectUrl.search = "";
+
+    const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    if (nextPath !== "/") {
+      redirectUrl.searchParams.set("next", nextPath);
+    }
 
     return NextResponse.redirect(redirectUrl);
   }
