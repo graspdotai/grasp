@@ -22,7 +22,7 @@ export default function Navbar() {
   const [profile, setProfile] = useState<UserAvatarProfile | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -85,7 +85,7 @@ export default function Navbar() {
                 <p className="text-xs text-neutral-500">
                   What are we learning,
                 </p>
-                <p className="text-sm font-medium text-neutral-800 hidden sm:inline">
+                <p className="text-sm font-medium text-neutral-800 inline">
                   {displayName}
                 </p>
               </div>
@@ -111,7 +111,10 @@ export default function Navbar() {
                       {displayName}
                     </p>
                     {profile.email && profile.email !== displayName && (
-                      <p className="text-xs text-neutral-400 truncate mt-0.5" title={profile.email}>
+                      <p
+                        className="text-xs text-neutral-400 truncate mt-0.5"
+                        title={profile.email}
+                      >
                         {profile.email}
                       </p>
                     )}
@@ -148,7 +151,6 @@ export default function Navbar() {
                       <GearIcon size={16} className="text-neutral-400" />
                       <span>Settings</span>
                     </Link>
-
                   </div>
                 </motion.div>
               )}
