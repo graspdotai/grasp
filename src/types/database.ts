@@ -223,8 +223,10 @@ export type Database = {
         Row: {
           audio_url: string | null
           created_at: string
+          diagram_query: string | null
           explanation_text: string
           id: number
+          layout: string | null
           module_id: number
           position: number
           title: string
@@ -232,8 +234,10 @@ export type Database = {
         Insert: {
           audio_url?: string | null
           created_at?: string
+          diagram_query?: string | null
           explanation_text: string
           id?: never
+          layout?: string | null
           module_id: number
           position: number
           title: string
@@ -241,8 +245,10 @@ export type Database = {
         Update: {
           audio_url?: string | null
           created_at?: string
+          diagram_query?: string | null
           explanation_text?: string
           id?: never
+          layout?: string | null
           module_id?: number
           position?: number
           title?: string
