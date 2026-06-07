@@ -65,6 +65,12 @@ export default function ProfilePage() {
     email,
   });
 
+  // DEBUG — remove once confirmed working
+  if (typeof window !== "undefined") {
+    console.log("[ProfilePage]", { userId, isLoading, profile });
+  }
+
+
   return (
     <main className="min-h-screen bg-neutral-50">
       <div className="p-6 max-w-7xl mx-auto">
