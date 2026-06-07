@@ -59,7 +59,7 @@ export default function NewCoursePage() {
     useState<(typeof LEVELS)[number]["value"]>("beginner");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { data: dbProfile } = useProfile();
+  const { data: dbProfile, isLoading: isProfileLoading } = useProfile();
   const onboarding = dbProfile ? {
     personas: dbProfile.learner_types || [],
     interests: dbProfile.learning_interests || [],
@@ -154,7 +154,11 @@ export default function NewCoursePage() {
                 <UserCircleIcon size={36} className="text-primary" />
                 <div>
                   <p className="text-sm text-neutral-500">You</p>
-                  {onboarding ? (
+                  {isProfileLoading ? (
+                    <span className="text-neutral-400 italic">
+                      Loading profile...
+                    </span>
+                  ) : onboarding && dbProfile?.onboarding_completed ? (
                     <span className="font-medium text-neutral-800">
                       {[
                         onboarding.personas?.[0],
