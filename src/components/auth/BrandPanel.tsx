@@ -17,11 +17,11 @@ export default function BrandPanel() {
 
       <div className="relative p-10 xl:p-12">
         <h2 className="font-display max-w-lg text-5xl font-semibold leading-[1.05] tracking-[-0.045em] text-white xl:text-6xl">
-          Learn any skill in a language that feels like home.
+          Every learner deserves a teacher that carries them along.
         </h2>
         <p className="mt-5 max-w-md text-base leading-7 text-blue-100">
-          Get a course tailored to your goals, with AI-powered voice lessons you
-          can follow at your own pace.
+          Type what you want to learn. Grasp builds a full course, teaches it
+          to you out loud, and answers your questions along the way.
         </p>
       </div>
 

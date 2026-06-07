@@ -64,10 +64,10 @@ export default function SigninForm() {
             className="font-display text-[29px] font-bold leading-tight tracking-[-0.025em]"
             id="signin-heading"
           >
-            Welcome Back
+            Welcome back.
           </h1>
           <p className="mt-1.5 text-[15px] text-slate-500">
-            Sign in to continue learning with Grasp.
+            Your classes are waiting — sign in to pick up where you left off.
           </p>
 
           <form className="mt-8" onSubmit={handleSubmit}>

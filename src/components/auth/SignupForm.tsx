@@ -59,10 +59,10 @@ export default function SignupForm() {
             className="font-display text-[29px] font-bold leading-tight tracking-[-0.025em]"
             id="signup-heading"
           >
-            Create an Account
+            Start learning for free.
           </h1>
           <p className="mt-1.5 text-[15px] text-slate-500">
-            Get your free Grasp account now.
+            Create your account and get your first course in under a minute.
           </p>
 
           <form className="mt-8" onSubmit={handleSubmit}>
