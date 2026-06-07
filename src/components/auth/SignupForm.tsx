@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import LogoIcon from "@/components/Logo";
 import { GoogleIcon, VisibilityIcon } from "@/components/auth/icons";
@@ -10,7 +9,6 @@ import Spinner from "@/components/Spinner";
 import { toast } from "sonner";
 
 export default function SignupForm() {
-  const router = useRouter();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,7 +30,7 @@ export default function SignupForm() {
     }
 
     toast.success("Account created successfully!");
-    router.push(result.redirectTo ?? "/onboarding");
+    window.location.assign(result.redirectTo ?? "/onboarding");
   }
 
   async function handleGoogleSignUp() {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import LogoIcon from "@/components/Logo";
 import { GoogleIcon, VisibilityIcon } from "@/components/auth/icons";
@@ -15,7 +15,6 @@ function safeNextPath(next: string | null): string {
 }
 
 export default function SigninForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,7 +36,7 @@ export default function SigninForm() {
     }
 
     const next = safeNextPath(searchParams.get("next"));
-    router.push(next !== "/" ? next : (result.redirectTo ?? "/"));
+    window.location.assign(next !== "/" ? next : (result.redirectTo ?? "/"));
   }
 
   async function handleGoogleSignIn() {
