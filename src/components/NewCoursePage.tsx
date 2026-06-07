@@ -60,12 +60,18 @@ export default function NewCoursePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { data: dbProfile, isLoading: isProfileLoading } = useProfile();
-  const onboarding = dbProfile ? {
-    personas: dbProfile.learner_types || [],
-    interests: dbProfile.learning_interests || [],
-    language: dbProfile.lesson_language || "english",
-    lessonLength: dbProfile.lesson_length || "short",
-  } : undefined;
+  // Map DB fields directly — learner_types, learning_interests, lesson_language, lesson_length
+  // are stored exactly as-is in the profiles table (confirmed from database.ts types)
+  const profileSummary = dbProfile?.onboarding_completed
+    ? [
+        dbProfile.learner_types?.[0],
+        dbProfile.learning_interests?.[0],
+        dbProfile.lesson_language,
+        dbProfile.lesson_length,
+      ]
+        .filter(Boolean)
+        .join(" • ")
+    : null;
   const [generationStatus, setGenerationStatus] = useState<string>("");
 
   // Input focus states for sleek underline animation
@@ -87,7 +93,12 @@ export default function NewCoursePage() {
         topic: topic.trim(),
         goal: goal.trim(),
         learnerLevel,
-        onboarding: onboarding ?? undefined,
+        onboarding: dbProfile?.onboarding_completed ? {
+          personas: dbProfile.learner_types || [],
+          interests: dbProfile.learning_interests || [],
+          language: dbProfile.lesson_language || "english",
+          lessonLength: dbProfile.lesson_length || "short",
+        } : undefined,
         userId,
       }, (progress) => {
         setGenerationStatus(progress.message);
@@ -155,24 +166,11 @@ export default function NewCoursePage() {
                 <div>
                   <p className="text-sm text-neutral-500">You</p>
                   {isProfileLoading ? (
-                    <span className="text-neutral-400 italic">
-                      Loading profile...
-                    </span>
-                  ) : onboarding && dbProfile?.onboarding_completed ? (
-                    <span className="font-medium text-neutral-800">
-                      {[
-                        onboarding.personas?.[0],
-                        onboarding.interests?.[0],
-                        onboarding.language,
-                        onboarding.lessonLength,
-                      ]
-                        .filter(Boolean)
-                        .join(" • ")}
-                    </span>
+                    <div className="mt-0.5 h-3 w-48 rounded-full bg-neutral-100 animate-pulse" />
+                  ) : profileSummary ? (
+                    <span className="font-medium text-neutral-800">{profileSummary}</span>
                   ) : (
-                    <span className="text-neutral-400 italic">
-                      No onboarding profile
-                    </span>
+                    <span className="text-neutral-400 italic">No profile set up</span>
                   )}
                 </div>
               </div>
@@ -181,7 +179,7 @@ export default function NewCoursePage() {
                 className="text-xs bg-primary py-2 px-3 rounded-full text-white font-medium flex items-center space-x-2 hover:bg-primary-700 transition-colors"
               >
                 <span>
-                  {onboarding ? "Customize Profile" : "Setup Profile"}{" "}
+                  {profileSummary ? "Customize Profile" : "Setup Profile"}{" "}
                 </span>
                 <ArrowRightIcon size={12} weight="bold" />
               </Link>

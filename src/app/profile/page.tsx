@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
 import { resolveDisplayName } from "@/lib/profileDisplay";
@@ -170,7 +170,17 @@ export default function ProfilePage() {
             )}
 
             {isLoading && userId && (
-              <p className="mt-6 text-sm text-neutral-500">Loading profile…</p>
+              <div className="mt-6 flex flex-col gap-1" aria-busy="true" aria-label="Loading profile">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                    <div className="h-10 w-10 shrink-0 rounded-full bg-neutral-100 animate-pulse" />
+                    <div className="flex flex-col gap-1.5">
+                      <div className="h-2.5 w-16 rounded-full bg-neutral-100 animate-pulse" />
+                      <div className="h-3.5 w-40 rounded-full bg-neutral-100 animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
             {!isLoading && profile && (
