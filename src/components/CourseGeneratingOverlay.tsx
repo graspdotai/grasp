@@ -66,16 +66,16 @@ export default function CourseGeneratingOverlay({
 
           {/* Centralized text and spinner loader */}
           <div className="relative z-10 flex flex-col items-center justify-center text-center px-6">
-            <div className="flex items-center justify-center overflow-hidden">
+            <div className="flex items-center justify-center overflow-hidden min-h-[80px]">
               <AnimatePresence mode="wait">
                 <motion.h2
                   id="course-generating-title"
                   key={displayText}
-                  initial={{ opacity: 0, y: 12, filter: "blur(4px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: -12, filter: "blur(4px)" }}
-                  transition={{ duration: 0.4, ease: "linear" }}
-                  className="font-sans text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 py-6"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="font-sans text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 py-6 text-center max-w-2xl"
                 >
                   {displayText}
                 </motion.h2>
