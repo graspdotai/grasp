@@ -17,9 +17,9 @@ async function testOpenAIKey() {
 
     const data = await response.json();
 
-    console.log("=========================");
+    console.log("========================");
     console.log("Status:", response.status);
-    console.log("=========================");
+    console.log("========================");
     console.log(data);
   } catch (error) {
     console.error("Request failed:", error);
