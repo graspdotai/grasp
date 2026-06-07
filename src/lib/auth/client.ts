@@ -54,36 +54,33 @@ export async function signUpWithEmail(
   fullName?: string,
 ): Promise<AuthResponse> {
   try {
-    const supabase = createClient();
-    const trimmedName = fullName?.trim();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: trimmedName
-        ? { data: { full_name: trimmedName } }
-        : undefined,
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        ...(fullName?.trim() ? { fullName: fullName.trim() } : {}),
+      }),
     });
+    const body = await res.json().catch(() => ({}));
 
-    if (error) {
-      return {
-        ok: false,
-        message: error.message.toLowerCase().includes("rate limit")
-          ? "We could not create your account right now. Please try again shortly."
-          : error.message,
-      };
-    }
-
-    if (!data.session) {
+    if (!res.ok || !body.ok) {
       return {
         ok: false,
         message:
-          "Email confirmation is still enabled in Supabase. Disable it to let users continue immediately.",
+          typeof body.message === "string"
+            ? body.message
+            : "We could not create your account right now. Please try again.",
       };
     }
 
-    await persistLocalUser();
+    if (body.user?.id) {
+      setLocalUserId(body.user.id);
+      if (body.user.email) setLocalUserEmail(body.user.email);
+    }
 
-    return { ok: true, redirectTo: "/onboarding" };
+    return { ok: true, redirectTo: body.redirectTo ?? "/onboarding" };
   } catch (error) {
     return { ok: false, message: errorMessage(error) };
   }
