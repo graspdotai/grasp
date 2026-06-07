@@ -184,9 +184,10 @@ export default function OnboardingFlow() {
                 Your learning space is ready.
               </h1>
               <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                We&apos;re preparing course recommendations that match your goals
-                and learning style.
+                You&apos;re all set. Start by creating your first course — just
+                type any topic and Grasp builds the rest.
               </p>
+
               <button
                 onClick={() => router.push("/")}
                 className="mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-blue-600 px-7 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
