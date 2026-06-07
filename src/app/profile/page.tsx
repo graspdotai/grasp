@@ -65,10 +65,6 @@ export default function ProfilePage() {
     email,
   });
 
-  // DEBUG — remove once confirmed working
-  if (typeof window !== "undefined") {
-    console.log("[ProfilePage]", { userId, isLoading, profile });
-  }
 
 
   return (
