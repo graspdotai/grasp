@@ -106,7 +106,7 @@ export default function Modal({
               </div>
             )}
 
-            {children && <div className="px-6 pb-6">{children}</div>}
+            {children && <div className="px-6 py-6">{children}</div>}
 
             {footer && (
               <div className="flex items-center justify-end gap-3 border-t border-neutral-100 px-6 py-4">
