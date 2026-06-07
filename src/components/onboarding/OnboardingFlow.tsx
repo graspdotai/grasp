@@ -2,11 +2,11 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight, Check } from "@phosphor-icons/react";
 import LogoIcon from "@/components/Logo";
 import { saveOnboardingDetails } from "@/lib/auth/client";
-import { saveOnboardingProfile } from "@/lib/onboardingStorage";
+import { saveOnboardingProfile, loadOnboardingProfile, clearOnboardingProfile } from "@/lib/onboardingStorage";
 import { getLocalUserId } from "@/lib/userSession";
 import Spinner from "@/components/Spinner";
 
@@ -77,6 +77,24 @@ export default function OnboardingFlow() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  useEffect(() => {
+    const saved = loadOnboardingProfile();
+    if (saved) {
+      setSelections({ 0: saved.personas, 1: saved.interests });
+      setLanguage(saved.language);
+      setLessonLength(saved.lessonLength);
+    }
+  }, []);
+
+  useEffect(() => {
+    saveOnboardingProfile({
+      personas: selections[0] ?? [],
+      interests: selections[1] ?? [],
+      language,
+      lessonLength,
+    });
+  }, [selections, language, lessonLength]);
+
   const currentStep = STEPS[step];
   const selectedOptions = selections[step] ?? [];
   const canContinue = step === 2 || selectedOptions.length > 0;
@@ -109,7 +127,6 @@ export default function OnboardingFlow() {
         language,
         lessonLength,
       };
-      saveOnboardingProfile(profile);
 
       setIsSaving(true);
       const result = await saveOnboardingDetails({
@@ -139,6 +156,7 @@ export default function OnboardingFlow() {
         });
       }
 
+      clearOnboardingProfile();
       setIsComplete(true);
       return;
     }

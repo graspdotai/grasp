@@ -22,3 +22,9 @@ export function loadOnboardingProfile(): OnboardingProfile | null {
     return null;
   }
 }
+
+export function clearOnboardingProfile(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+}
+
