@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
-import { getLocalUserId } from "@/lib/userSession";
+import { useAuthContext } from "@/components/AuthProvider";
 import type { Tables } from "@/types/database";
 
 type ProfileRow = Tables<"profiles">;
@@ -15,7 +15,9 @@ async function fetchProfile(userId: string): Promise<ProfileRow | null> {
 }
 
 export function useProfile() {
-  const userId = getLocalUserId();
+  // Reads from React context — re-renders when AuthProvider resolves the session,
+  // which triggers this query to actually run after login.
+  const { userId } = useAuthContext();
 
   return useQuery({
     queryKey: queryKeys.profile(userId ?? "anonymous"),
@@ -26,7 +28,7 @@ export function useProfile() {
 
 export function useInvalidateProfile() {
   const queryClient = useQueryClient();
-  const userId = getLocalUserId();
+  const { userId } = useAuthContext();
 
   return () => {
     if (userId) {

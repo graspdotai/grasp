@@ -23,7 +23,8 @@ import {
   PaletteIcon,
 } from "@phosphor-icons/react";
 import Navbar from "@/components/Navbar";
-import { getLocalUserEmail, getLocalUserId } from "@/lib/userSession";
+import { getLocalUserEmail } from "@/lib/userSession";
+import { useAuthContext } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 
 function ProfileRow({
@@ -55,7 +56,7 @@ function ProfileRow({
 }
 
 export default function ProfilePage() {
-  const userId = getLocalUserId();
+  const { userId } = useAuthContext();
   const { data: profile, isLoading } = useProfile();
 
   const email = profile?.email ?? getLocalUserEmail() ?? "Not signed in";
