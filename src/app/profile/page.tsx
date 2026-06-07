@@ -23,10 +23,8 @@ import {
   PaletteIcon,
 } from "@phosphor-icons/react";
 import Navbar from "@/components/Navbar";
-import { loadOnboardingProfile } from "@/lib/onboardingStorage";
 import { getLocalUserEmail, getLocalUserId } from "@/lib/userSession";
 import { useProfile } from "@/hooks/useProfile";
-import type { OnboardingProfile } from "@/lib/onboarding";
 
 function ProfileRow({
   icon,
@@ -59,11 +57,6 @@ function ProfileRow({
 export default function ProfilePage() {
   const userId = getLocalUserId();
   const { data: profile, isLoading } = useProfile();
-  const [onboarding, setOnboarding] = useState<OnboardingProfile | null>(null);
-
-  useEffect(() => {
-    setOnboarding(loadOnboardingProfile());
-  }, []);
 
   const email = profile?.email ?? getLocalUserEmail() ?? "Not signed in";
   const displayName = resolveDisplayName({
@@ -220,37 +213,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {onboarding && (
-              <div className="mt-8 pt-8 border-t border-neutral-100">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
-                  Local onboarding (this device)
-                </h2>
-                <div className="flex flex-col gap-1">
-                  <ProfileRow
-                    icon={<TranslateIcon size={20} weight="regular" />}
-                    label="Language"
-                    value={onboarding.language}
-                    capitalize
-                  />
-                  <ProfileRow
-                    icon={<ClockIcon size={20} weight="regular" />}
-                    label="Lesson length"
-                    value={onboarding.lessonLength}
-                    capitalize
-                  />
-                  <ProfileRow
-                    icon={<BrainIcon size={20} weight="regular" />}
-                    label="Learner types"
-                    value={onboarding.personas.join(", ")}
-                  />
-                  <ProfileRow
-                    icon={<StarIcon size={20} weight="regular" />}
-                    label="Interests"
-                    value={onboarding.interests.join(", ")}
-                  />
-                </div>
-              </div>
-            )}
+
 
             <div className="mt-8 flex gap-3">
               <Link

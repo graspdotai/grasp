@@ -16,7 +16,7 @@ import CourseGeneratingOverlay from "@/components/CourseGeneratingOverlay";
 import Navbar from "@/components/Navbar";
 import Spinner from "@/components/Spinner";
 import { createCourse } from "@/lib/courseApi";
-import { loadOnboardingProfile } from "@/lib/onboardingStorage";
+import { useProfile } from "@/hooks/useProfile";
 import { getLocalUserId } from "@/lib/userSession";
 import { toast } from "sonner";
 
@@ -59,7 +59,13 @@ export default function NewCoursePage() {
     useState<(typeof LEVELS)[number]["value"]>("beginner");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [onboarding, setOnboarding] = useState(loadOnboardingProfile());
+  const { data: dbProfile } = useProfile();
+  const onboarding = dbProfile ? {
+    personas: dbProfile.learner_types || [],
+    interests: dbProfile.learning_interests || [],
+    language: dbProfile.lesson_language || "english",
+    lessonLength: dbProfile.lesson_length || "short",
+  } : undefined;
   const [generationStatus, setGenerationStatus] = useState<string>("");
 
   // Input focus states for sleek underline animation
@@ -68,7 +74,6 @@ export default function NewCoursePage() {
 
   useEffect(() => {
     setMounted(true);
-    setOnboarding(loadOnboardingProfile());
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -77,13 +82,12 @@ export default function NewCoursePage() {
     setGenerationStatus("Analyzing your topic and researching sources...");
 
     try {
-      const profile = loadOnboardingProfile();
       const userId = getLocalUserId() ?? undefined;
       const data = await createCourse({
         topic: topic.trim(),
         goal: goal.trim(),
         learnerLevel,
-        onboarding: profile ?? undefined,
+        onboarding: onboarding ?? undefined,
         userId,
       }, (progress) => {
         setGenerationStatus(progress.message);
