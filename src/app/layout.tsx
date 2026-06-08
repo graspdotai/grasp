@@ -9,6 +9,7 @@ import AuthProvider from "@/components/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
+import { CSPostHogProvider } from "@/components/PostHogProvider";
 
 const googleSans = Google_Sans({
   subsets: ["latin"],
@@ -84,14 +85,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${googleSans.className} ${bricolageGrotesque.variable} ${dmSerif.variable} antialiased`}
-      >
-        <QueryProvider>
-          <AuthProvider>{children}</AuthProvider>
-          <Toaster position="bottom-right" richColors />
-          <Analytics />
-        </QueryProvider>
+      <body className={`${googleSans.className} ${bricolageGrotesque.variable} ${dmSerif.variable} antialiased`}>
+        <CSPostHogProvider>
+          <QueryProvider>
+            <AuthProvider>{children}</AuthProvider>
+            <Toaster position="bottom-right" richColors />
+            <Analytics />
+          </QueryProvider>
+        </CSPostHogProvider>
       </body>
     </html>
   );
