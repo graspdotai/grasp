@@ -8,6 +8,7 @@ import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const googleSans = Google_Sans({
   subsets: ["latin"],
@@ -89,6 +90,7 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>
           <Toaster position="bottom-right" richColors />
+          <Analytics />
         </QueryProvider>
       </body>
     </html>
